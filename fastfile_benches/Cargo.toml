@@ -1,0 +1,13 @@
+[package]
+name = "fastfile_benches"
+version = "0.0.0"
+authors = ["Lukas Pustina <lukas@pustina.de>"]
+description = "Benchmarks for fastfile"
+edition = "2018"
+workspace = "../"
+
+[lib]
+name = "fastfile_benches"
+bench = true
+
+[dependencies]
