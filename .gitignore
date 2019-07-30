@@ -1,3 +1,4 @@
 /target
+fastfile_benches/target
 **/*.rs.bk
 Cargo.lock
