@@ -17,9 +17,9 @@ pub const MAX_READ_BUF_SIZE: usize = 64 * 1024;
 macro_rules! prepare_buf {
     ($reader:ident, $size:tt) => {
         unsafe {
-            let mut buf: [u8; $size] = std::mem::uninitialized();
-            $reader.initializer().initialize(&mut buf);
-            buf
+            let mut buf = std::mem::MaybeUninit::<[u8; $size]>::uninit();
+            $reader.initializer().initialize(&mut *buf.as_mut_ptr());
+            buf.assume_init()
         };
     };
     ($reader:ident) => {

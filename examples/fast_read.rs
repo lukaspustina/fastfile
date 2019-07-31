@@ -1,4 +1,4 @@
-// TODO: move to stable with mem::MaybeUninit::uninit()
+// TODO: this is currenly only on nightly
 #![feature(read_initializer)]
 
 use fastfile::prelude::*;
