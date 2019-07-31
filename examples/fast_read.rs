@@ -3,10 +3,7 @@
 
 use fastfile::prelude::*;
 
-use std::{
-    io::{self, Read},
-    mem,
-};
+use std::io::{self, Read};
 
 fn main() {
     let path = "Cargo.toml";
@@ -23,11 +20,7 @@ fn main() {
 }
 
 fn read<R: Read + Sized>(reader: &mut R, buf_size: usize) -> std::io::Result<u64> {
-    let mut buf = unsafe {
-        let mut buf: [u8; MAX_READ_BUF_SIZE] = mem::uninitialized();
-        reader.initializer().initialize(&mut buf);
-        buf
-    };
+    let mut buf = prepare_buf!(reader);
 
     let mut bytes_read = 0u64;
     loop {

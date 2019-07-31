@@ -3,11 +3,29 @@ use crate::{errors::*, os};
 use failure::Fail;
 use std::{
     fs::File,
-    io::{self, Read, Write},
+    io::{self, Read},
     path::Path,
 };
 
 pub const MAX_READ_BUF_SIZE: usize = 64 * 1024;
+
+/// Allocate a memory buffer on the stack and initialize it for the reader
+///
+/// This macro takes a `Read` as first parameter and optionally a buffer size as second parameter.
+/// If the second parameter is ommited, the buffer is allocated with size of `MAX_READ_BUF_SIZE`.
+#[macro_export]
+macro_rules! prepare_buf {
+    ($reader:ident, $size:tt) => {
+        unsafe {
+            let mut buf: [u8; $size] = std::mem::uninitialized();
+            $reader.initializer().initialize(&mut buf);
+            buf
+        };
+    };
+    ($reader:ident) => {
+        prepare_buf!($reader, MAX_READ_BUF_SIZE)
+    };
+}
 
 /// `FastFile` is the main API for fast reading and writing files
 pub struct FastFile {}

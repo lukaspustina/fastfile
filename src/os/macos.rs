@@ -1,7 +1,5 @@
 use crate::{errors::*, fastfile::FastFileReader};
 
-use failure::Fail;
-
 pub fn prepare_file_for_reading(ffr: &FastFileReader) -> Result<()> {
     if ffr.size() < 256 * 1024 * 1024 {
         read_advice()?;

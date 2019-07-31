@@ -17,5 +17,8 @@ mod os;
 
 /// `prelude` for the most important types and functions
 pub mod prelude {
-    pub use crate::fastfile::{FastFile, MAX_READ_BUF_SIZE};
+    pub use crate::{
+        fastfile::{FastFile, MAX_READ_BUF_SIZE},
+        prepare_buf,
+    };
 }
