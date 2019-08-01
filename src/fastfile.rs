@@ -1,6 +1,7 @@
 use crate::{errors::*, os};
 
 use failure::Fail;
+use memmap::Mmap;
 use std::{
     fs::File,
     io::{self, Read},
@@ -66,9 +67,11 @@ impl FastFileReaderBuilder {
         }
     }
 
-    pub fn open(self) -> Result<FastFileReader> {
-        let file = self.file.unwrap(); // Safe, since no code path allows to build w/o Some(file)
-        let size = if let Some(size) = self.size {
+    pub fn open_with_strategy<T: BackendReaderStragegySelector>(self, selector: &T) -> Result<FastFileReader> {
+        let FastFileReaderBuilder { file, size } = self;
+
+        let file = file.unwrap(); // Safe, since no code path allows to build w/o Some(file)
+        let size = if let Some(size) = size {
             size
         } else {
             let meta = file
@@ -77,17 +80,62 @@ impl FastFileReaderBuilder {
             meta.len()
         };
 
-        let ff = FastFileReader { inner: file, size };
+        os::prepare_file_for_reading(&file, size)?;
+        let inner = os::create_backing_reader(selector, file)?;
 
-        ff.prepare_file_for_reading()?;
-
+        let ff = FastFileReader { inner, size };
         Ok(ff)
+    }
+
+    pub fn open(self) -> Result<FastFileReader> {
+        let FastFileReaderBuilder { file, size } = self;
+
+        let file = file.unwrap(); // Safe, since no code path allows to build w/o Some(file)
+        let size = if let Some(size) = size {
+            size
+        } else {
+            let meta = file
+                .metadata()
+                .map_err(|e| e.context(ErrorKind::FileOpFailed))?;
+            meta.len()
+        };
+
+        os::prepare_file_for_reading(&file, size)?;
+        let brss = os::DefaultBackendStrategySelector::new(size);
+        let inner = os::create_backing_reader(&brss, file)?;
+
+        let ff = FastFileReader { inner, size };
+        Ok(ff)
+    }
+}
+
+pub enum BackendReaderStragegy {
+    File,
+    Mmap
+}
+
+pub trait BackendReaderStragegySelector {
+    fn select(&self) -> BackendReaderStragegy;
+}
+
+/// Backing Reader for FastFileReader
+pub(crate) enum BackingReader {
+    File(File),
+    Mmap(File, std::io::Cursor<Mmap>)
+}
+
+impl Read for BackingReader {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        match self {
+            BackingReader::File(file) => file.read(buf),
+            BackingReader::Mmap(_, mmap) => mmap.read(buf),
+        }
     }
 }
 
 /// `FastFileReader` is a readable (`std::io::Read`) FastFile
 pub struct FastFileReader {
-    inner: File,
+    inner: BackingReader,
     size: u64,
 }
 
@@ -99,14 +147,56 @@ impl FastFileReader {
     pub fn optimal_buffer_size(&self) -> usize {
         MAX_READ_BUF_SIZE.min(self.size.next_power_of_two() as usize)
     }
-
-    fn prepare_file_for_reading(&self) -> Result<()> {
-        os::prepare_file_for_reading(self)
-    }
 }
 
 impl Read for FastFileReader {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.inner.read(buf)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use spectral::prelude::*;
+
+    #[test]
+    fn fastfilereader_read_correctly_with_file_backend() {
+        struct TestBackendReaderStragegySelector {}
+        impl BackendReaderStragegySelector for TestBackendReaderStragegySelector {
+            fn select(&self) -> BackendReaderStragegy {
+                BackendReaderStragegy::File}
+        }
+        let brss = TestBackendReaderStragegySelector {};
+
+        fastfilereader_read_correctly_tester(&brss);
+    }
+
+    #[test]
+    fn fastfilereader_read_correctly_with_mmap_backend() {
+        struct TestBackendReaderStragegySelector {}
+        impl BackendReaderStragegySelector for TestBackendReaderStragegySelector {
+            fn select(&self) -> BackendReaderStragegy {
+                BackendReaderStragegy::Mmap}
+        }
+        let brss = TestBackendReaderStragegySelector {};
+
+        fastfilereader_read_correctly_tester(&brss);
+    }
+
+    fn fastfilereader_read_correctly_tester<T: BackendReaderStragegySelector>(brss: &T) {
+        let expected = include_bytes!("../Cargo.toml");
+
+        let mut ffr = FastFile::read("Cargo.toml")
+            .expect("Failed to create FastFileReaderBuilder")
+            .open_with_strategy(brss)
+            .expect("Failed to open path as FastFile");
+
+        let mut bytes = Vec::new();
+        ffr.read_to_end(&mut bytes)
+            .expect("Failed to read from FastFile");
+
+        asserting("File has been correctly read").that(&bytes.as_slice()).is_equal_to(expected.as_ref());
     }
 }

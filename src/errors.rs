@@ -7,6 +7,9 @@ pub enum ErrorKind {
     /// File operation failure
     #[fail(display = "file operation failed")]
     FileOpFailed,
+    /// Libc function failure
+    #[fail(display = "libc function failed: {}", _0)]
+    LibcFailed(&'static str),
 }
 
 impl Clone for ErrorKind {
@@ -14,6 +17,7 @@ impl Clone for ErrorKind {
         use self::ErrorKind::*;
         match *self {
             FileOpFailed => FileOpFailed,
+            LibcFailed(s) => LibcFailed(s),
         }
     }
 }
