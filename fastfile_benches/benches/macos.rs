@@ -1,12 +1,13 @@
 #![feature(read_initializer)]
 
-use fastfile_benches::*;
-use fastfile_benches::benches::*;
+use fastfile_benches::{benches::*, *};
 
 use criterion::*;
 use fastfile::prelude::*;
-use std::io::{self, Read};
-use std::path::{Path, PathBuf};
+use std::{
+    io::{self, Read},
+    path::{Path, PathBuf},
+};
 
 fn read<P: AsRef<Path>>(path: P) -> io::Result<(u64, u64)> {
     use std::process::Command;
@@ -43,13 +44,9 @@ fn bench_impls(c: &mut Criterion) {
     let plot_config = PlotConfiguration::default().summary_scale(AxisScale::Logarithmic);
     c.bench(
         "fastfile",
-        ParameterizedBenchmark::new(
-            "read",
-            |b, param| b.iter(|| read(&param.path)),
-            params,
-        )
-        .throughput(|param| Throughput::Bytes(param.size as u32))
-        .plot_config(plot_config),
+        ParameterizedBenchmark::new("read", |b, param| b.iter(|| read(&param.path)), params)
+            .throughput(|param| Throughput::Bytes(param.size as u32))
+            .plot_config(plot_config),
     );
 
     teardown(&paths);
@@ -57,4 +54,3 @@ fn bench_impls(c: &mut Criterion) {
 
 criterion_group!(name = benches; config = Criterion::default().sample_size(10); targets = bench_impls);
 criterion_main!(benches);
-

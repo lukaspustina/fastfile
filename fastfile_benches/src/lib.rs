@@ -5,12 +5,12 @@ use std::io::{self, Write};
 
 pub static FILE_SIZES: &[usize] = &[
     1024,
-    4*1024,
-    16*1024,
-    256*1024,
-    1024*1024,
-    10*1024*1024,
-    100*1024*1024,
+    4 * 1024,
+    16 * 1024,
+    256 * 1024,
+    1024 * 1024,
+    10 * 1024 * 1024,
+    100 * 1024 * 1024,
 ];
 
 pub struct WriterWithSha<'a, T: Write> {
@@ -183,7 +183,10 @@ pub mod benches {
     }
 
     fn fill_file<P: AsRef<Path>, R: Rng>(path: P, size: usize, rng: &mut R) -> io::Result<usize> {
-        assert!(size / 1024 > 0 && size % 1024 == 0, "fill_file currently only supports 1KB chunks");
+        assert!(
+            size / 1024 > 0 && size % 1024 == 0,
+            "fill_file currently only supports 1KB chunks"
+        );
         let mut file = File::create(path)?;
 
         let mut buf = [0u8; 1024];
@@ -197,4 +200,3 @@ pub mod benches {
     }
 
 }
-

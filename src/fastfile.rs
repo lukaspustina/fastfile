@@ -1,4 +1,4 @@
-use crate::{errors::*, os};
+use crate::{errors::*, strategy};
 
 use failure::Fail;
 use memmap::Mmap;
@@ -46,8 +46,8 @@ impl FastFile {
 
 /// `FastFileReaderBuilder` is a builder for a FastFileReader
 pub struct FastFileReaderBuilder {
-    file: Option<File>,
-    size: Option<u64>,
+    pub file: Option<File>,
+    pub size: Option<u64>,
 }
 
 impl Default for FastFileReaderBuilder {
@@ -67,61 +67,34 @@ impl FastFileReaderBuilder {
         }
     }
 
-    pub fn open_with_strategy<T: BackendReaderStragegySelector>(self, selector: &T) -> Result<FastFileReader> {
-        let FastFileReaderBuilder { file, size } = self;
-
-        let file = file.unwrap(); // Safe, since no code path allows to build w/o Some(file)
-        let size = if let Some(size) = size {
-            size
-        } else {
-            let meta = file
-                .metadata()
-                .map_err(|e| e.context(ErrorKind::FileOpFailed))?;
-            meta.len()
-        };
-
-        os::prepare_file_for_reading(&file, size)?;
-        let inner = os::create_backing_reader(selector, file)?;
-
-        let ff = FastFileReader { inner, size };
-        Ok(ff)
+    pub fn open_with_strategy<T: strategy::ReaderStrategy>(
+        self,
+        reader_strategy: &T,
+    ) -> Result<FastFileReader> {
+        reader_strategy.get_reader(self)
     }
 
     pub fn open(self) -> Result<FastFileReader> {
-        let FastFileReaderBuilder { file, size } = self;
-
-        let file = file.unwrap(); // Safe, since no code path allows to build w/o Some(file)
-        let size = if let Some(size) = size {
-            size
-        } else {
-            let meta = file
-                .metadata()
-                .map_err(|e| e.context(ErrorKind::FileOpFailed))?;
-            meta.len()
-        };
-
-        os::prepare_file_for_reading(&file, size)?;
-        let brss = os::DefaultBackendStrategySelector::new(size);
-        let inner = os::create_backing_reader(&brss, file)?;
-
-        let ff = FastFileReader { inner, size };
-        Ok(ff)
+        let reader_strategy = strategy::DefaultReaderStrategy {};
+        self.open_with_strategy(&reader_strategy)
     }
 }
 
-pub enum BackendReaderStragegy {
-    File,
-    Mmap
-}
-
-pub trait BackendReaderStragegySelector {
-    fn select(&self) -> BackendReaderStragegy;
-}
-
 /// Backing Reader for FastFileReader
-pub(crate) enum BackingReader {
+pub enum BackingReader {
     File(File),
-    Mmap(File, std::io::Cursor<Mmap>)
+    Mmap(File, std::io::Cursor<Mmap>),
+}
+
+impl BackingReader {
+    pub fn file(file: File) -> Result<BackingReader> {
+        Ok(BackingReader::File(file))
+    }
+
+    pub fn mmap(file: File) -> Result<BackingReader> {
+        let mmap = unsafe { Mmap::map(&file).map_err(|e| e.context(ErrorKind::FileOpFailed))? };
+        Ok(BackingReader::Mmap(file, std::io::Cursor::new(mmap)))
+    }
 }
 
 impl Read for BackingReader {
@@ -140,6 +113,10 @@ pub struct FastFileReader {
 }
 
 impl FastFileReader {
+    pub fn new(inner: BackingReader, size: u64) -> FastFileReader {
+        FastFileReader { inner, size }
+    }
+
     pub fn size(&self) -> u64 {
         self.size
     }
@@ -163,40 +140,52 @@ mod tests {
 
     #[test]
     fn fastfilereader_read_correctly_with_file_backend() {
-        struct TestBackendReaderStragegySelector {}
-        impl BackendReaderStragegySelector for TestBackendReaderStragegySelector {
-            fn select(&self) -> BackendReaderStragegy {
-                BackendReaderStragegy::File}
-        }
-        let brss = TestBackendReaderStragegySelector {};
+        struct TestReaderStragegy {}
+        impl strategy::ReaderStrategy for TestReaderStragegy {
+            fn get_reader(&self, ffrb: FastFileReaderBuilder) -> Result<FastFileReader> {
+                let FastFileReaderBuilder { file, size } = ffrb;
+                let inner = BackingReader::file(file.unwrap())?;
+                let size = size.unwrap_or(0);
 
-        fastfilereader_read_correctly_tester(&brss);
+                Ok(FastFileReader::new(inner, size))
+            }
+        }
+        let reader_strategy = TestReaderStragegy {};
+
+        fastfilereader_read_correctly_tester(&reader_strategy);
     }
 
     #[test]
     fn fastfilereader_read_correctly_with_mmap_backend() {
-        struct TestBackendReaderStragegySelector {}
-        impl BackendReaderStragegySelector for TestBackendReaderStragegySelector {
-            fn select(&self) -> BackendReaderStragegy {
-                BackendReaderStragegy::Mmap}
-        }
-        let brss = TestBackendReaderStragegySelector {};
+        struct TestReaderStragegy {}
+        impl strategy::ReaderStrategy for TestReaderStragegy {
+            fn get_reader(&self, ffrb: FastFileReaderBuilder) -> Result<FastFileReader> {
+                let FastFileReaderBuilder { file, size } = ffrb;
+                let inner = BackingReader::mmap(file.unwrap())?;
+                let size = size.unwrap_or(0);
 
-        fastfilereader_read_correctly_tester(&brss);
+                Ok(FastFileReader::new(inner, size))
+            }
+        }
+        let reader_strategy = TestReaderStragegy {};
+
+        fastfilereader_read_correctly_tester(&reader_strategy);
     }
 
-    fn fastfilereader_read_correctly_tester<T: BackendReaderStragegySelector>(brss: &T) {
+    fn fastfilereader_read_correctly_tester<T: strategy::ReaderStrategy>(reader_strategy: &T) {
         let expected = include_bytes!("../Cargo.toml");
 
         let mut ffr = FastFile::read("Cargo.toml")
             .expect("Failed to create FastFileReaderBuilder")
-            .open_with_strategy(brss)
+            .open_with_strategy(reader_strategy)
             .expect("Failed to open path as FastFile");
 
         let mut bytes = Vec::new();
         ffr.read_to_end(&mut bytes)
             .expect("Failed to read from FastFile");
 
-        asserting("File has been correctly read").that(&bytes.as_slice()).is_equal_to(expected.as_ref());
+        asserting("File has been correctly read")
+            .that(&bytes.as_slice())
+            .is_equal_to(expected.as_ref());
     }
 }

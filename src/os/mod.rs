@@ -1,12 +1,7 @@
-
-
 #[cfg(target_os = "macos")]
 mod macos;
 
 #[cfg(target_os = "macos")]
-pub(crate) use macos::prepare_file_for_reading;
+pub use macos::read_advice;
 #[cfg(target_os = "macos")]
-pub(crate) use macos::create_backing_reader;
-#[cfg(target_os = "macos")]
-pub use macos::MacOsBackendStrategySelector as DefaultBackendStrategySelector;
-
+pub use macos::read_rdahead;
