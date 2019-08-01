@@ -17,8 +17,6 @@ impl ReaderStrategy for DefaultMacOsReaderStrategy {
     fn get_reader(&self, ffrb: FastFileReaderBuilder) -> Result<FastFileReader> {
         let size = get_file_size(&ffrb)?;
         let file = ffrb.file.unwrap(); // Safe, since no code path allows to build w/o Some(file)
-
-        let _ = prepare_file_for_reading(&file, size)?;
         let inner = create_backing_reader(file, size)?;
 
         Ok(FastFileReader::new(inner, size))
@@ -40,6 +38,8 @@ fn get_file_size(ffrb: &FastFileReaderBuilder) -> Result<u64> {
 }
 
 fn create_backing_reader(file: File, file_size: u64) -> Result<BackingReader> {
+    let _ = prepare_file_for_reading(&file, file_size)?;
+
     if file_size < 0 {
         BackingReader::mmap(file)
     } else {
