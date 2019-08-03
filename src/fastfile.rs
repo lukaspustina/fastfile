@@ -4,7 +4,7 @@ use failure::Fail;
 use memmap::Mmap;
 use std::{
     fs::File,
-    io::{self, Read},
+    io,
     path::Path,
 };
 
@@ -97,7 +97,7 @@ impl BackingReader {
     }
 }
 
-impl Read for BackingReader {
+impl io::Read for BackingReader {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         match self {
             BackingReader::File(file) => file.read(buf),
@@ -110,11 +110,12 @@ impl Read for BackingReader {
 pub struct FastFileReader {
     inner: BackingReader,
     size: u64,
+    buffer: Option<Vec<u8>>,
 }
 
 impl FastFileReader {
     pub fn new(inner: BackingReader, size: u64) -> FastFileReader {
-        FastFileReader { inner, size }
+        FastFileReader { inner, size, buffer: None }
     }
 
     pub fn size(&self) -> u64 {
@@ -124,9 +125,59 @@ impl FastFileReader {
     pub fn optimal_buffer_size(&self) -> usize {
         MAX_READ_BUF_SIZE.min(self.size.next_power_of_two() as usize)
     }
+
+    fn init_buffer(&mut self) {
+        use std::io::Read;
+
+        let mut vec: Vec<u8> = Vec:: with_capacity(MAX_READ_BUF_SIZE);
+        unsafe { vec.set_len(MAX_READ_BUF_SIZE); }
+        let buf = vec.as_mut_slice();
+        unsafe {self.inner.initializer().initialize(&mut *buf); }
+        self.buffer = Some(vec);
+    }
 }
 
-impl Read for FastFileReader {
+pub trait FastFileRead {
+    fn read(&mut self) -> io::Result<&[u8]>;
+
+    fn read_to_end(&mut self) -> io::Result<&[u8]>;
+}
+
+impl FastFileRead for FastFileReader {
+    fn read(&mut self) -> io::Result<&[u8]> {
+        use std::io::Read;
+
+        if self.buffer.is_none() {
+            self.init_buffer();
+        }
+        let vec = self.buffer.as_mut().unwrap(); // Safe, bc we checked above
+        let buf = vec.as_mut_slice();
+
+        let n = self.inner.read(&mut buf[0..MAX_READ_BUF_SIZE])?;
+
+        Ok(&buf[0..n])
+    }
+
+    fn read_to_end(&mut self) -> io::Result<&[u8]> {
+        use std::io::Read;
+
+        if self.buffer.is_none() {
+            self.init_buffer();
+        }
+        let mut vec = self.buffer.as_mut().unwrap(); // Safe, bc we checked above
+        // `Read::read_to_end` _appends_ to the specified buffer; so we need to set the len to
+        // 0 first
+        unsafe { vec.set_len(0); }
+
+        let n = self.inner.read_to_end(&mut vec)?;
+        let buf = vec.as_mut_slice();
+
+        Ok(&buf[0..n])
+    }
+
+}
+
+impl io::Read for FastFileReader {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.inner.read(buf)
     }
@@ -134,58 +185,102 @@ impl Read for FastFileReader {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{strategy, BackingReader, FastFile, FastFileReader, FastFileReaderBuilder, Result};
 
     use spectral::prelude::*;
 
-    #[test]
-    fn fastfilereader_read_correctly_with_file_backend() {
-        struct TestReaderStragegy {}
-        impl strategy::ReaderStrategy for TestReaderStragegy {
-            fn get_reader(&self, ffrb: FastFileReaderBuilder) -> Result<FastFileReader> {
-                let FastFileReaderBuilder { file, size } = ffrb;
-                let inner = BackingReader::file(file.unwrap())?;
-                let size = size.unwrap_or(0);
+    mod read {
+        use super::*;
 
-                Ok(FastFileReader::new(inner, size))
-            }
+        use std::io::Read;
+
+        #[test]
+        fn fastfilereader_read_correctly_with_file_backend() {
+            let reader_strategy = TestFileReaderStragegy {};
+
+            fastfilereader_read_correctly_tester(&reader_strategy);
         }
-        let reader_strategy = TestReaderStragegy {};
 
-        fastfilereader_read_correctly_tester(&reader_strategy);
+        #[test]
+        fn fastfilereader_read_correctly_with_mmap_backend() {
+            let reader_strategy = TestMmapReaderStragegy {};
+
+            fastfilereader_read_correctly_tester(&reader_strategy);
+        }
+
+        fn fastfilereader_read_correctly_tester<T: strategy::ReaderStrategy>(reader_strategy: &T) {
+            let expected = include_bytes!("../Cargo.toml");
+
+            let mut ffr = FastFile::read("Cargo.toml")
+                .expect("Failed to create FastFileReaderBuilder")
+                .open_with_strategy(reader_strategy)
+                .expect("Failed to open path as FastFile");
+
+            let mut bytes = Vec::new();
+            ffr.read_to_end(&mut bytes)
+                .expect("Failed to read from FastFile");
+
+            asserting("File has been correctly read")
+                .that(&bytes.as_slice())
+                .is_equal_to(expected.as_ref());
+        }
     }
 
-    #[test]
-    fn fastfilereader_read_correctly_with_mmap_backend() {
-        struct TestReaderStragegy {}
-        impl strategy::ReaderStrategy for TestReaderStragegy {
-            fn get_reader(&self, ffrb: FastFileReaderBuilder) -> Result<FastFileReader> {
-                let FastFileReaderBuilder { file, size } = ffrb;
-                let inner = BackingReader::mmap(file.unwrap())?;
-                let size = size.unwrap_or(0);
+    mod fast_read {
+        use super::*;
 
-                Ok(FastFileReader::new(inner, size))
-            }
+        use crate::fastfile::FastFileRead;
+
+        #[test]
+        fn fastfilereader_read_correctly_with_file_backend() {
+            let reader_strategy = TestFileReaderStragegy {};
+
+            fastfilereader_read_correctly_tester(&reader_strategy);
         }
-        let reader_strategy = TestReaderStragegy {};
 
-        fastfilereader_read_correctly_tester(&reader_strategy);
+        #[test]
+        fn fastfilereader_read_correctly_with_mmap_backend() {
+            let reader_strategy = TestMmapReaderStragegy {};
+
+            fastfilereader_read_correctly_tester(&reader_strategy);
+        }
+
+        fn fastfilereader_read_correctly_tester<T: strategy::ReaderStrategy>(reader_strategy: &T) {
+            let expected = include_bytes!("../Cargo.toml");
+
+            let mut ffr = FastFile::read("Cargo.toml")
+                .expect("Failed to create FastFileReaderBuilder")
+                .open_with_strategy(reader_strategy)
+                .expect("Failed to open path as FastFile");
+
+            let bytes = ffr.read_to_end()
+                .expect("Failed to read from FastFile");
+
+            asserting("File has been correctly read")
+                .that(&bytes)
+                .is_equal_to(expected.as_ref());
+        }
     }
 
-    fn fastfilereader_read_correctly_tester<T: strategy::ReaderStrategy>(reader_strategy: &T) {
-        let expected = include_bytes!("../Cargo.toml");
+    struct TestFileReaderStragegy {}
+    impl strategy::ReaderStrategy for TestFileReaderStragegy {
+        fn get_reader(&self, ffrb: FastFileReaderBuilder) -> Result<FastFileReader> {
+            let FastFileReaderBuilder { file, size } = ffrb;
+            let inner = BackingReader::file(file.unwrap())?;
+            let size = size.unwrap_or(0);
 
-        let mut ffr = FastFile::read("Cargo.toml")
-            .expect("Failed to create FastFileReaderBuilder")
-            .open_with_strategy(reader_strategy)
-            .expect("Failed to open path as FastFile");
+            Ok(FastFileReader::new(inner, size))
+        }
+    }
 
-        let mut bytes = Vec::new();
-        ffr.read_to_end(&mut bytes)
-            .expect("Failed to read from FastFile");
+    struct TestMmapReaderStragegy {}
+    impl strategy::ReaderStrategy for TestMmapReaderStragegy {
+        fn get_reader(&self, ffrb: FastFileReaderBuilder) -> Result<FastFileReader> {
+            let FastFileReaderBuilder { file, size } = ffrb;
+            let inner = BackingReader::mmap(file.unwrap())?;
+            let size = size.unwrap_or(0);
 
-        asserting("File has been correctly read")
-            .that(&bytes.as_slice())
-            .is_equal_to(expected.as_ref());
+            Ok(FastFileReader::new(inner, size))
+        }
     }
 }

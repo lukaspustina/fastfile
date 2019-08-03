@@ -4,7 +4,6 @@ version = "0.0.0"
 authors = ["Lukas Pustina <lukas@pustina.de>"]
 description = "Benchmarks for fastfile"
 edition = "2018"
-workspace = "../"
 
 [lib]
 name = "fastfile_benches"
@@ -20,5 +19,13 @@ tempfile = "3"
 spectral = "0.6"
 
 [[bench]]
+name = "macos_fastread"
+harness = false
+
+[[bench]]
 name = "macos_read"
+harness = false
+
+[[bench]]
+name = "macos_compare_read"
 harness = false

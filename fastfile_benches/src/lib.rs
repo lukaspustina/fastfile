@@ -1,3 +1,5 @@
+#![feature(read_initializer)]
+
 use fastfile::prelude::*;
 
 use ring::digest::{Context, Digest, SHA256};
@@ -197,6 +199,68 @@ pub mod benches {
         }
 
         Ok(size)
+    }
+
+
+    pub mod fastread {
+        use fastfile::prelude::*;
+        use fastfile::FastFileRead;
+        use std::{
+            io::{self},
+            path::Path,
+        };
+
+        pub fn read<P: AsRef<Path>>(path: P) -> io::Result<(u64, u64)> {
+            let mut ffr = FastFile::read(path)
+                .expect("Failed to create FastFileReaderBuilder")
+                .open()
+                .expect("Failed to open path as FastFile");
+
+            let mut sum = 064;
+            let mut bytes_read = 0u64;
+            loop {
+                let len = match ffr.read() {
+                    Ok(buf) if buf.is_empty() => return Ok((bytes_read, sum)),
+                    Ok(buf) => {
+                        sum += buf.iter().map(|x| *x as u64).sum::<u64>();
+                        buf.len()
+                    },
+                    Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
+                    Err(e) => return Err(e),
+                };
+                bytes_read += len as u64;
+            }
+        }
+    }
+
+    pub mod read {
+        use fastfile::prelude::*;
+        use std::{
+            io::{self, Read},
+            path::{Path},
+        };
+
+        pub fn read<P: AsRef<Path>>(path: P) -> io::Result<(u64, u64)> {
+            let mut ffr = FastFile::read(path)
+                .expect("Failed to create FastFileReaderBuilder")
+                .open()
+                .expect("Failed to open path as FastFile");
+
+            let mut buf = prepare_buf!(ffr);
+            let mut sum = 064;
+            let mut bytes_read = 0u64;
+            loop {
+                let len = match ffr.read(&mut buf[0..MAX_READ_BUF_SIZE]) {
+                    Ok(0) => return Ok((bytes_read, sum)),
+                    Ok(len) => len,
+                    Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
+                    Err(e) => return Err(e),
+                };
+                bytes_read += len as u64;
+
+                sum += buf.iter().map(|x| *x as u64).sum::<u64>();
+            }
+        }
     }
 
 }
