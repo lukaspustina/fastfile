@@ -5,10 +5,7 @@ use crate::{
 };
 
 use failure::Fail;
-use std::{
-    fs::File,
-    os::unix::io::AsRawFd,
-};
+use std::{fs::File, os::unix::io::AsRawFd};
 
 pub struct DefaultMacOsReaderStrategy {}
 
