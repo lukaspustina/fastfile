@@ -11,6 +11,7 @@ name = "fastfile_benches"
 [dependencies]
 criterion = "0.2"
 fastfile = { path = "../" }
+libc = "0.2"
 rand = { version = "0.7", features = ["small_rng"] }
 ring = "0.14"
 tempfile = "3"
