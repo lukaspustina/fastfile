@@ -4,6 +4,7 @@ use failure::Fail;
 use libc;
 use std::os::unix::io::RawFd;
 
+#[allow(dead_code)]
 pub fn read_advise(fd: RawFd, file_size: u64) -> Result<()> {
     let count: libc::c_int = file_size.min(libc::c_int::max_value() as u64) as libc::c_int;
 
@@ -20,6 +21,7 @@ pub fn read_advise(fd: RawFd, file_size: u64) -> Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn read_ahead(fd: RawFd) -> Result<()> {
     let res = unsafe { libc::fcntl(fd, libc::F_RDAHEAD, 1) };
     if res < 0 {
