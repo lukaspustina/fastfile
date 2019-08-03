@@ -9,7 +9,7 @@ fn bench_impls(c: &mut Criterion) {
 
     let plot_config = PlotConfiguration::default().summary_scale(AxisScale::Logarithmic);
     c.bench(
-        "Compare fastfile macos",
+        "Compare fastfile macos (cached)",
         ParameterizedBenchmark::new(
             "stdlib_buf_read",
             |b, param| b.iter(|| methods::stdlib::buf_read::read(&param.path, false)),

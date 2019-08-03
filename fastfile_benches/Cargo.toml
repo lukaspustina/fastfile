@@ -20,13 +20,25 @@ tempfile = "3"
 spectral = "0.6"
 
 [[bench]]
-name = "macos_fastread"
+name = "macos_fastread_cache"
 harness = false
 
 [[bench]]
-name = "macos_read"
+name = "macos_read_cache"
 harness = false
 
 [[bench]]
-name = "macos_compare_read"
+name = "macos_compare_read_cache"
+harness = false
+
+[[bench]]
+name = "macos_fastread_nocache"
+harness = false
+
+[[bench]]
+name = "macos_read_nocache"
+harness = false
+
+[[bench]]
+name = "macos_compare_read_nocache"
 harness = false

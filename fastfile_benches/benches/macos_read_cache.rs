@@ -11,10 +11,10 @@ fn bench_impls(c: &mut Criterion) {
 
     let plot_config = PlotConfiguration::default().summary_scale(AxisScale::Logarithmic);
     c.bench(
-        "fastfile macos",
+        "fastfile macos (cached)",
         ParameterizedBenchmark::new(
-            "fastread",
-            |b, param| b.iter(|| methods::fastfile::fastread::read(&param.path, false)),
+            "read",
+            |b, param| b.iter(|| methods::fastfile::read::read(&param.path, false)),
             params,
         )
         .throughput(|param| Throughput::Bytes(param.size as u32))
