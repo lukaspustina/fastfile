@@ -12,14 +12,14 @@ fn bench_impls(c: &mut Criterion) {
         "Compare fastfile macos",
         ParameterizedBenchmark::new(
             "stdlib_buf_read",
-            |b, param| b.iter(|| methods::stdlib::buf_read::read(&param.path)),
+            |b, param| b.iter(|| methods::stdlib::buf_read::read(&param.path, false)),
             params,
         )
         .with_function("read", |b, param| {
-            b.iter(|| methods::fastfile::read::read(&param.path))
+            b.iter(|| methods::fastfile::read::read(&param.path, false))
         })
         .with_function("fastread", |b, param| {
-            b.iter(|| methods::fastfile::fastread::read(&param.path))
+            b.iter(|| methods::fastfile::fastread::read(&param.path, false))
         })
         .throughput(|param| Throughput::Bytes(param.size as u32))
         .plot_config(plot_config),

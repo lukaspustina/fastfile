@@ -14,7 +14,7 @@ fn bench_impls(c: &mut Criterion) {
         "fastfile macos",
         ParameterizedBenchmark::new(
             "fastread",
-            |b, param| b.iter(|| methods::fastfile::fastread::read(&param.path)),
+            |b, param| b.iter(|| methods::fastfile::fastread::read(&param.path, false)),
             params,
         )
         .throughput(|param| Throughput::Bytes(param.size as u32))

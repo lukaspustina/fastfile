@@ -3,7 +3,13 @@ pub mod fastfile {
         use fastfile::{prelude::*, FastFileRead};
         use std::{io, path::Path};
 
-        pub fn read<P: AsRef<Path>>(path: P) -> io::Result<(u64, u64)> {
+        pub fn read<P: AsRef<Path>>(path: P, purge: bool) -> io::Result<(u64, u64)> {
+            let path = path.as_ref();
+            if purge {
+                crate::io::purge_cache(path)
+                    .expect("Failed to purge page cache for file");
+            }
+
             let mut ffr = FastFile::read(path)
                 .expect("Failed to create FastFileReaderBuilder")
                 .open()
@@ -33,7 +39,13 @@ pub mod fastfile {
             path::Path,
         };
 
-        pub fn read<P: AsRef<Path>>(path: P) -> io::Result<(u64, u64)> {
+        pub fn read<P: AsRef<Path>>(path: P, purge: bool) -> io::Result<(u64, u64)> {
+            let path = path.as_ref();
+            if purge {
+                crate::io::purge_cache(path)
+                    .expect("Failed to purge page cache for file");
+            }
+
             let mut ffr = FastFile::read(path)
                 .expect("Failed to create FastFileReaderBuilder")
                 .open()
@@ -66,7 +78,13 @@ pub mod stdlib {
             path::Path,
         };
 
-        pub fn read<P: AsRef<Path>>(path: P) -> io::Result<(u64, u64)> {
+        pub fn read<P: AsRef<Path>>(path: P, purge: bool) -> io::Result<(u64, u64)> {
+            let path = path.as_ref();
+            if purge {
+                crate::io::purge_cache(path)
+                    .expect("Failed to purge page cache for file");
+            }
+
             let file = File::open(path).expect("Failed to open path as File");
             let mut reader = BufReader::new(file);
 
