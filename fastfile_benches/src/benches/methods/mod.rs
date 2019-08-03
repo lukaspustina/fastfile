@@ -9,13 +9,13 @@ pub mod fastfile {
                 .open()
                 .expect("Failed to open path as FastFile");
 
-            let mut sum = 064;
+            let mut sum = 0u64;
             let mut bytes_read = 0u64;
             loop {
                 let len = match ffr.read() {
                     Ok(buf) if buf.is_empty() => return Ok((bytes_read, sum)),
                     Ok(buf) => {
-                        sum += buf.iter().map(|x| *x as u64).sum::<u64>();
+                        sum += buf.iter().map(|x| u64::from(*x)).sum::<u64>();
                         buf.len()
                     }
                     Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
@@ -40,7 +40,7 @@ pub mod fastfile {
                 .expect("Failed to open path as FastFile");
 
             let mut buf = prepare_buf!(ffr);
-            let mut sum = 064;
+            let mut sum = 0u64;
             let mut bytes_read = 0u64;
             loop {
                 let len = match ffr.read(&mut buf[0..MAX_READ_BUF_SIZE]) {
@@ -51,7 +51,7 @@ pub mod fastfile {
                 };
                 bytes_read += len as u64;
 
-                sum += buf.iter().map(|x| *x as u64).sum::<u64>();
+                sum += buf.iter().map(|x| u64::from(*x)).sum::<u64>();
             }
         }
     }
@@ -71,7 +71,7 @@ pub mod stdlib {
             let mut reader = BufReader::new(file);
 
             let mut buf = [0u8; MAX_READ_BUF_SIZE];
-            let mut sum = 064;
+            let mut sum = 0u64;
             let mut bytes_read = 0u64;
             loop {
                 let len = match reader.read(&mut buf[0..MAX_READ_BUF_SIZE]) {
@@ -82,7 +82,7 @@ pub mod stdlib {
                 };
                 bytes_read += len as u64;
 
-                sum += buf.iter().map(|x| *x as u64).sum::<u64>();
+                sum += buf.iter().map(|x| u64::from(*x)).sum::<u64>();
             }
         }
     }

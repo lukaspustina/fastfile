@@ -1,14 +1,13 @@
 use crate::{
     errors::*,
     fastfile::{BackingReader, FastFileReader, FastFileReaderBuilder},
-    os::{read_advise, read_ahead},
     strategy::ReaderStrategy,
 };
 
 use failure::Fail;
 use std::{
     fs::File,
-    os::unix::io::{AsRawFd, RawFd},
+    os::unix::io::AsRawFd,
 };
 
 pub struct DefaultMacOsReaderStrategy {}
@@ -38,17 +37,17 @@ fn get_file_size(ffrb: &FastFileReaderBuilder) -> Result<u64> {
 }
 
 fn create_backing_reader(file: File, file_size: u64) -> Result<BackingReader> {
-    let _ = prepare_file_for_reading(&file, file_size)?;
+    prepare_file_for_reading(&file, file_size)?;
 
-    if file_size < 0 {
+    if file_size == 0 {
         BackingReader::mmap(file)
     } else {
         BackingReader::file(file)
     }
 }
 
-fn prepare_file_for_reading<T: AsRawFd>(fd: &T, file_size: u64) -> Result<()> {
-    let fd = fd.as_raw_fd();
+fn prepare_file_for_reading<T: AsRawFd>(fd: &T, _file_size: u64) -> Result<()> {
+    let _fd = fd.as_raw_fd();
 
     Ok(())
 }

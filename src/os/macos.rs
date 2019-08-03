@@ -36,7 +36,7 @@ mod tests {
 
     use spectral::prelude::*;
 
-    use std::{fs::File, io::Read, os::unix::io::AsRawFd};
+    use std::{fs::File, os::unix::io::AsRawFd};
 
     #[test]
     fn test_read_advise() {
