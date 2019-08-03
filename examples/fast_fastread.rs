@@ -1,5 +1,4 @@
-use fastfile::prelude::*;
-use fastfile::FastFileRead;
+use fastfile::{prelude::*, FastFileRead};
 
 fn main() {
     let path = "Cargo.toml";

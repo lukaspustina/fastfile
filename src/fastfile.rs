@@ -2,11 +2,7 @@ use crate::{errors::*, strategy};
 
 use failure::Fail;
 use memmap::Mmap;
-use std::{
-    fs::File,
-    io,
-    path::Path,
-};
+use std::{fs::File, io, path::Path};
 
 pub const MAX_READ_BUF_SIZE: usize = 64 * 1024;
 
@@ -115,7 +111,11 @@ pub struct FastFileReader {
 
 impl FastFileReader {
     pub fn new(inner: BackingReader, size: u64) -> FastFileReader {
-        FastFileReader { inner, size, buffer: None }
+        FastFileReader {
+            inner,
+            size,
+            buffer: None,
+        }
     }
 
     pub fn size(&self) -> u64 {
@@ -129,10 +129,14 @@ impl FastFileReader {
     fn init_buffer(&mut self) {
         use std::io::Read;
 
-        let mut vec: Vec<u8> = Vec:: with_capacity(MAX_READ_BUF_SIZE);
-        unsafe { vec.set_len(MAX_READ_BUF_SIZE); }
+        let mut vec: Vec<u8> = Vec::with_capacity(MAX_READ_BUF_SIZE);
+        unsafe {
+            vec.set_len(MAX_READ_BUF_SIZE);
+        }
         let buf = vec.as_mut_slice();
-        unsafe {self.inner.initializer().initialize(&mut *buf); }
+        unsafe {
+            self.inner.initializer().initialize(&mut *buf);
+        }
         self.buffer = Some(vec);
     }
 }
@@ -165,16 +169,18 @@ impl FastFileRead for FastFileReader {
             self.init_buffer();
         }
         let mut vec = self.buffer.as_mut().unwrap(); // Safe, bc we checked above
-        // `Read::read_to_end` _appends_ to the specified buffer; so we need to set the len to
-        // 0 first
-        unsafe { vec.set_len(0); }
+
+        // `Read::read_to_end` _appends_ to the specified buffer; so we need to set the len to 0
+        // first
+        unsafe {
+            vec.set_len(0);
+        }
 
         let n = self.inner.read_to_end(&mut vec)?;
         let buf = vec.as_mut_slice();
 
         Ok(&buf[0..n])
     }
-
 }
 
 impl io::Read for FastFileReader {
@@ -253,8 +259,7 @@ mod tests {
                 .open_with_strategy(reader_strategy)
                 .expect("Failed to open path as FastFile");
 
-            let bytes = ffr.read_to_end()
-                .expect("Failed to read from FastFile");
+            let bytes = ffr.read_to_end().expect("Failed to read from FastFile");
 
             asserting("File has been correctly read")
                 .that(&bytes)

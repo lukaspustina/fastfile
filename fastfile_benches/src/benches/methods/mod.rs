@@ -1,11 +1,7 @@
 pub mod fastfile {
     pub mod fastread {
-        use fastfile::prelude::*;
-        use fastfile::FastFileRead;
-        use std::{
-            io::{self},
-            path::Path,
-        };
+        use fastfile::{prelude::*, FastFileRead};
+        use std::{io, path::Path};
 
         pub fn read<P: AsRef<Path>>(path: P) -> io::Result<(u64, u64)> {
             let mut ffr = FastFile::read(path)
@@ -21,7 +17,7 @@ pub mod fastfile {
                     Ok(buf) => {
                         sum += buf.iter().map(|x| *x as u64).sum::<u64>();
                         buf.len()
-                    },
+                    }
                     Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
                     Err(e) => return Err(e),
                 };
@@ -34,7 +30,7 @@ pub mod fastfile {
         use fastfile::prelude::*;
         use std::{
             io::{self, Read},
-            path::{Path},
+            path::Path,
         };
 
         pub fn read<P: AsRef<Path>>(path: P) -> io::Result<(u64, u64)> {
@@ -65,14 +61,13 @@ pub mod stdlib {
     pub mod buf_read {
         use fastfile::fastfile::MAX_READ_BUF_SIZE;
         use std::{
-            io::{self, BufReader, Read},
             fs::File,
-            path::{Path},
+            io::{self, BufReader, Read},
+            path::Path,
         };
 
         pub fn read<P: AsRef<Path>>(path: P) -> io::Result<(u64, u64)> {
-            let file = File::open(path)
-                .expect("Failed to open path as File");
+            let file = File::open(path).expect("Failed to open path as File");
             let mut reader = BufReader::new(file);
 
             let mut buf = [0u8; MAX_READ_BUF_SIZE];

@@ -36,14 +36,13 @@ mod tests {
 
     use spectral::prelude::*;
 
-    use std::fs::File;
-    use std::io::Read;
-    use std::os::unix::io::AsRawFd;
+    use std::{fs::File, io::Read, os::unix::io::AsRawFd};
 
     #[test]
     fn test_read_advise() {
         let f = get_file();
-        let file_size = f.metadata()
+        let file_size = f
+            .metadata()
             .expect("Could not get metadata of test file")
             .len();
 
@@ -61,7 +60,6 @@ mod tests {
     }
 
     fn get_file() -> File {
-        File::open("Cargo.toml")
-            .expect("Could not open test file")
+        File::open("Cargo.toml").expect("Could not open test file")
     }
 }
