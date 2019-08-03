@@ -27,5 +27,5 @@ pub mod prelude {
     };
 }
 
-pub use fastfile::FastFileRead;
+pub use crate::fastfile::FastFileRead;
 

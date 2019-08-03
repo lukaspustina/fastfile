@@ -2,6 +2,6 @@
 mod macos;
 
 #[cfg(target_os = "macos")]
-pub use macos::read_advice;
+pub use macos::read_advise;
 #[cfg(target_os = "macos")]
-pub use macos::read_rdahead;
+pub use macos::read_ahead;

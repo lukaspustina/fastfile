@@ -1,7 +1,7 @@
 use crate::{
     errors::*,
     fastfile::{BackingReader, FastFileReader, FastFileReaderBuilder},
-    os::{read_advice, read_rdahead},
+    os::{read_advise, read_ahead},
     strategy::ReaderStrategy,
 };
 
