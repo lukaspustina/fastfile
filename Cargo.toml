@@ -6,7 +6,9 @@ description = "Sequentially read and write files as fast as possible"
 categories = ["filesystem"]
 keywords = ["performance", "file", "io"]
 license = "MIT"
+
 edition = "2018"
+build = "build.rs"
 
 [workspace]
 members = ["fastfile_benches"]
