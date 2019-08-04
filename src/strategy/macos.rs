@@ -1,6 +1,7 @@
 use crate::{
     errors::*,
     fastfile::{BackingReader, FastFileReader, FastFileReaderBuilder},
+    os,
     strategy::ReaderStrategy,
 };
 
@@ -36,15 +37,17 @@ fn get_file_size(ffrb: &FastFileReaderBuilder) -> Result<u64> {
 fn create_backing_reader(file: File, file_size: u64) -> Result<BackingReader> {
     prepare_file_for_reading(&file, file_size)?;
 
-    if file_size == 0 {
-        BackingReader::mmap(file)
-    } else {
-        BackingReader::file(file)
-    }
+    BackingReader::file(file)
 }
 
-fn prepare_file_for_reading<T: AsRawFd>(fd: &T, _file_size: u64) -> Result<()> {
-    let _fd = fd.as_raw_fd();
+fn prepare_file_for_reading<T: AsRawFd>(fd: &T, file_size: u64) -> Result<()> {
+    let fd = fd.as_raw_fd();
+
+    if file_size >= os::PAGE_SIZE as u64 {
+        if file_size <= 10 * 1024 * 1024 {
+            os::read_advise(fd, file_size)?;
+        }
+    }
 
     Ok(())
 }

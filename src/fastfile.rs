@@ -1,10 +1,11 @@
-use crate::{errors::*, strategy};
+use crate::{errors::*, os, strategy};
 
 use failure::Fail;
 use memmap::Mmap;
 use std::{fs::File, io, path::Path};
 
-pub const MAX_READ_BUF_SIZE: usize = 64 * 1024;
+pub const MIN_READ_BUF_SIZE: usize = os::PAGE_SIZE;
+pub const MAX_READ_BUF_SIZE: usize = 4 * 1024 * 1024;
 
 /// Allocate a memory buffer on the stack and initialize it for the reader
 ///
@@ -122,16 +123,13 @@ impl FastFileReader {
         self.size
     }
 
-    pub fn optimal_buffer_size(&self) -> usize {
-        MAX_READ_BUF_SIZE.min(self.size.next_power_of_two() as usize)
-    }
-
     fn init_buffer(&mut self) {
         use std::io::Read;
 
-        let mut vec: Vec<u8> = Vec::with_capacity(MAX_READ_BUF_SIZE);
+        let buf_size = optimal_buffer_size(self.size);
+        let mut vec: Vec<u8> = Vec::with_capacity(buf_size);
         unsafe {
-            vec.set_len(MAX_READ_BUF_SIZE);
+            vec.set_len(buf_size);
         }
         let buf = vec.as_mut_slice();
         unsafe {
@@ -139,6 +137,14 @@ impl FastFileReader {
         }
         self.buffer = Some(vec);
     }
+}
+
+// Computes the optimal buffer size for a specified file size aligned to the system's page size.
+pub fn optimal_buffer_size(file_size: u64) -> usize {
+    let size = file_size as usize;
+    let suggestion = ((size + os::PAGE_SIZE - 1) / os::PAGE_SIZE) * os::PAGE_SIZE;
+    let suggestion = MAX_READ_BUF_SIZE.min(suggestion);
+    MIN_READ_BUF_SIZE.max(suggestion)
 }
 
 pub trait FastFileRead {
@@ -157,7 +163,7 @@ impl FastFileRead for FastFileReader {
         let vec = self.buffer.as_mut().unwrap(); // Safe, bc we checked above
         let buf = vec.as_mut_slice();
 
-        let n = self.inner.read(&mut buf[0..MAX_READ_BUF_SIZE])?;
+        let n = self.inner.read(&mut buf[..])?;
 
         Ok(&buf[0..n])
     }
@@ -191,7 +197,7 @@ impl io::Read for FastFileReader {
 
 #[cfg(test)]
 mod tests {
-    use super::{strategy, BackingReader, FastFile, FastFileReader, FastFileReaderBuilder, Result};
+    use super::{strategy, optimal_buffer_size, BackingReader, FastFile, FastFileReader, FastFileReaderBuilder, Result, os::PAGE_SIZE, MIN_READ_BUF_SIZE, MAX_READ_BUF_SIZE};
 
     use spectral::prelude::*;
 
@@ -199,6 +205,36 @@ mod tests {
         use super::*;
 
         use std::io::Read;
+
+        #[test]
+        fn test_optimal_buffer_size_1024() {
+            asserting("size = 0").that(&optimal_buffer_size(0)).is_equal_to(&MIN_READ_BUF_SIZE);
+            asserting("size = 1").that(&optimal_buffer_size(1)).is_equal_to(&MIN_READ_BUF_SIZE);
+            asserting("size = 1023").that(&optimal_buffer_size(1023)).is_equal_to(&MIN_READ_BUF_SIZE);
+            asserting("size = 1024").that(&optimal_buffer_size(1024)).is_equal_to(&MIN_READ_BUF_SIZE);
+        }
+
+        #[test]
+        fn test_optimal_buffer_size_page_size() {
+            asserting("size = PAGE_SIZE - 1").that(&optimal_buffer_size(PAGE_SIZE as u64 - 1)).is_equal_to(&PAGE_SIZE);
+            asserting("size = PAGE_SIZE").that(&optimal_buffer_size(PAGE_SIZE as u64)).is_equal_to(&PAGE_SIZE);
+            asserting("size = PAGE_SIZE + 1").that(&optimal_buffer_size(PAGE_SIZE as u64 + 1)).is_equal_to(&2*PAGE_SIZE);
+            asserting("size = 2*PAGE_SIZE + 1").that(&optimal_buffer_size(2*PAGE_SIZE as u64 + 1)).is_equal_to(&3*PAGE_SIZE);
+        }
+
+        #[test]
+        fn test_optimal_buffer_size_min_read_buf_size() {
+            asserting("size = MIN_READ_BUF_SIZE - 1").that(&optimal_buffer_size(MIN_READ_BUF_SIZE as u64 - 1)).is_equal_to(&MIN_READ_BUF_SIZE);
+            asserting("size = MIN_READ_BUF_SIZE").that(&optimal_buffer_size(MIN_READ_BUF_SIZE as u64)).is_equal_to(&MIN_READ_BUF_SIZE);
+            asserting("size = MIN_READ_BUF_SIZE + 1").that(&optimal_buffer_size(MIN_READ_BUF_SIZE as u64 + 1)).is_equal_to(&(2*MIN_READ_BUF_SIZE));
+        }
+
+        #[test]
+        fn test_optimal_buffer_size_max_read_buf_size() {
+            asserting("size = MAX_READ_BUF_SIZE - 1").that(&optimal_buffer_size(MAX_READ_BUF_SIZE as u64 - 1)).is_equal_to(&MAX_READ_BUF_SIZE);
+            asserting("size = MAX_READ_BUF_SIZE").that(&optimal_buffer_size(MAX_READ_BUF_SIZE as u64)).is_equal_to(&MAX_READ_BUF_SIZE);
+            asserting("size = MAX_READ_BUF_SIZE + 1").that(&optimal_buffer_size(MAX_READ_BUF_SIZE as u64 + 1)).is_equal_to(&(MAX_READ_BUF_SIZE));
+        }
 
         #[test]
         fn fastfilereader_read_correctly_with_file_backend() {

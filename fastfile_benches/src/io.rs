@@ -1,10 +1,11 @@
-use fastfile::fastfile::MAX_READ_BUF_SIZE;
 use libc;
 use ring::digest::{Context, Digest, SHA256};
 use std::io::{self, Write};
 use std::fs::File;
 use std::path::Path;
 use std::os::unix::io::AsRawFd;
+
+pub const MAX_READ_BUF_SIZE: usize = 64 * 1024;
 
 pub struct WriterWithSha<'a, T: Write> {
     inner: &'a mut T,
@@ -137,7 +138,7 @@ mod tests {
 
     #[test]
     fn conuming_sink_src_exact_buf() {
-        let buf = vec![0u8; MAX_READ_BUF_SIZE];
+        let buf = vec![0u8; 64*1024];
 
         let mut sink = ConsumingSink::new();
         let res = sink.write(&buf);
@@ -147,7 +148,7 @@ mod tests {
 
     #[test]
     fn conuming_sink_src_larger_buf() {
-        let buf = vec![0u8; MAX_READ_BUF_SIZE + 1];
+        let buf = vec![0u8; 64*1024 + 1];
 
         let mut sink = ConsumingSink::new();
         let res = sink.write(&buf);

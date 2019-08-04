@@ -12,7 +12,7 @@ fn main() {
         .expect("Failed to create FastFileReaderBuilder")
         .open()
         .expect("Failed to open path as FastFile");
-    let buf_size = ffr.optimal_buffer_size();
+    let buf_size = fastfile::fastfile::optimal_buffer_size(ffr.size());
     let bytes_read = read(&mut ffr, buf_size).expect("Failed to read file");
 
     assert_eq!(bytes_read, ffr.size(), "Read bytes differ from file size");

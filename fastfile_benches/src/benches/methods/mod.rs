@@ -51,11 +51,11 @@ pub mod fastfile {
                 .open()
                 .expect("Failed to open path as FastFile");
 
-            let mut buf = prepare_buf!(ffr);
+            let mut buf = prepare_buf!(ffr, 65_536);
             let mut sum = 0u64;
             let mut bytes_read = 0u64;
             loop {
-                let len = match ffr.read(&mut buf[0..MAX_READ_BUF_SIZE]) {
+                let len = match ffr.read(&mut buf[..]) {
                     Ok(0) => return Ok((bytes_read, sum)),
                     Ok(len) => len,
                     Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
@@ -71,7 +71,6 @@ pub mod fastfile {
 
 pub mod stdlib {
     pub mod buf_read {
-        use fastfile::fastfile::MAX_READ_BUF_SIZE;
         use std::{
             fs::File,
             io::{self, BufReader, Read},
@@ -88,11 +87,11 @@ pub mod stdlib {
             let file = File::open(path).expect("Failed to open path as File");
             let mut reader = BufReader::new(file);
 
-            let mut buf = [0u8; MAX_READ_BUF_SIZE];
+            let mut buf = [0u8; 8 * 1024];
             let mut sum = 0u64;
             let mut bytes_read = 0u64;
             loop {
-                let len = match reader.read(&mut buf[0..MAX_READ_BUF_SIZE]) {
+                let len = match reader.read(&mut buf[..]) {
                     Ok(0) => return Ok((bytes_read, sum)),
                     Ok(len) => len,
                     Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
