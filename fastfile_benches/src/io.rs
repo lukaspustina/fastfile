@@ -85,7 +85,7 @@ pub fn purge_cache<T: AsRef<Path>>(path: T) -> io::Result<()> {
     let file_size = file.metadata()?.len();
     let fd = file.as_raw_fd();
     unsafe {
-        let mem = libc::mmap(0 as *mut libc::c_void, file_size as libc::size_t, libc::PROT_READ, libc::MAP_SHARED, fd, 0);
+        let mem = libc::mmap(std::ptr::null_mut(), file_size as libc::size_t, libc::PROT_READ, libc::MAP_SHARED, fd, 0);
         if mem == libc::MAP_FAILED {
             eprintln!("mmap failed");
             return Err(io::Error::from(io::ErrorKind::Other));

@@ -1,8 +1,11 @@
-use crate::errors::*;
+use crate::{
+    errors::*,
+    os::PageCacheInfo,
+};
 
 use failure::Fail;
 use libc;
-use std::os::unix::io::RawFd;
+use std::os::unix::io::{AsRawFd, RawFd};
 
 #[allow(dead_code)]
 pub fn read_advise(fd: RawFd, file_size: u64) -> Result<()> {
@@ -32,6 +35,54 @@ pub fn read_ahead(fd: RawFd) -> Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
+pub fn get_page_cache_info<T: AsRawFd>(file: T, file_size: u64) -> Result<PageCacheInfo> {
+    let fd = file.as_raw_fd();
+
+    let mem = unsafe {
+        let mem = libc::mmap(std::ptr::null_mut(), file_size as libc::size_t, libc::PROT_READ, libc::MAP_SHARED, fd, 0);
+        if mem == libc::MAP_FAILED {
+            return Err(Error::from(ErrorKind::LibcFailed("mmap")))
+                .map_err(|e| e.context(ErrorKind::FileOpFailed).into());
+        }
+        mem
+    };
+
+    let num_pages = bytes_in_pages(file_size);
+    let mut pages: Vec<libc::c_char> = Vec::with_capacity(num_pages);
+    unsafe {
+        pages.set_len(num_pages);
+    }
+
+    let pages_array = pages.as_mut_slice();
+    unsafe {
+        let res = libc::mincore(mem, file_size as libc::size_t, pages_array.as_mut_ptr());
+        if res < 0 {
+            return Err(Error::from(ErrorKind::LibcFailed("mincore")))
+                .map_err(|e| e.context(ErrorKind::FileOpFailed).into());
+        }
+    }
+    let num_cached_pages = pages_array.iter().map(|x| (x & 0x1) as usize).sum();
+
+    let pci = PageCacheInfo {
+        total: num_pages,
+        cached: num_cached_pages,
+    };
+
+    Ok(pci)
+}
+
+fn bytes_in_pages(bytes: u64) -> usize {
+    let pagesize = get_sys_page_size() as u64;
+    ((bytes + pagesize - 1) / pagesize) as usize
+}
+
+fn get_sys_page_size() -> libc::c_long {
+    unsafe {
+        libc::sysconf(libc::_SC_PAGESIZE)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -59,6 +110,24 @@ mod tests {
         let res = read_ahead(f.as_raw_fd());
 
         asserting("Read advise").that(&res).is_ok();
+    }
+
+    #[test]
+    fn test_get_page_cache_info() {
+        let f = get_file();
+        let file_size = f
+            .metadata()
+            .expect("Could not get metadata of test file")
+            .len();
+
+        let res = get_page_cache_info(f, file_size);
+        asserting("Get page cache information").that(&res.is_ok()).is_true();
+
+        let pci = res.unwrap();
+        asserting("Number of pages").that(&pci.total()).is_equal_to(&1);
+        // Cargo.toml is always cached due to `cargo test` obviously reads it.
+        asserting("Number of cached pages").that(&pci.cached()).is_equal_to(&1);
+        asserting("Cached ratio").that(&pci.ratio()).is_equal_to(&1f32);
     }
 
     fn get_file() -> File {
