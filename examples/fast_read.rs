@@ -2,11 +2,15 @@
 #![feature(read_initializer)]
 
 use fastfile::prelude::*;
-use std::env;
-use std::io::{self, Read};
+use std::{
+    env,
+    io::{self, Read},
+};
 
 fn main() {
-    let path = env::args().nth(1).unwrap_or_else(|| "Cargo.toml".to_string());
+    let path = env::args()
+        .nth(1)
+        .unwrap_or_else(|| "Cargo.toml".to_string());
 
     let mut ffr = FastFile::read(path)
         .expect("Failed to create FastFileReaderBuilder")

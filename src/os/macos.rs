@@ -1,6 +1,6 @@
 use crate::{
     errors::*,
-    os::{PAGE_SIZE, PageCacheInfo},
+    os::{PageCacheInfo, PAGE_SIZE},
 };
 
 use failure::Fail;
@@ -38,7 +38,14 @@ pub fn read_ahead(fd: RawFd) -> Result<()> {
 #[allow(dead_code)]
 pub fn get_page_cache_info(fd: RawFd, file_size: u64) -> Result<PageCacheInfo> {
     let mem = unsafe {
-        let mem = libc::mmap(std::ptr::null_mut(), file_size as libc::size_t, libc::PROT_READ, libc::MAP_SHARED, fd, 0);
+        let mem = libc::mmap(
+            std::ptr::null_mut(),
+            file_size as libc::size_t,
+            libc::PROT_READ,
+            libc::MAP_SHARED,
+            fd,
+            0,
+        );
         if mem == libc::MAP_FAILED {
             return Err(Error::from(ErrorKind::LibcFailed("mmap")))
                 .map_err(|e| e.context(ErrorKind::FileOpFailed).into());
@@ -112,13 +119,21 @@ mod tests {
             .len();
 
         let res = get_page_cache_info(f.as_raw_fd(), file_size);
-        asserting("Get page cache information").that(&res.is_ok()).is_true();
+        asserting("Get page cache information")
+            .that(&res.is_ok())
+            .is_true();
 
         let pci = res.unwrap();
-        asserting("Number of pages").that(&pci.total()).is_equal_to(&1);
+        asserting("Number of pages")
+            .that(&pci.total())
+            .is_equal_to(&1);
         // Cargo.toml is always cached due to `cargo test` obviously reads it.
-        asserting("Number of cached pages").that(&pci.cached()).is_equal_to(&1);
-        asserting("Cached ratio").that(&pci.ratio()).is_equal_to(&1f32);
+        asserting("Number of cached pages")
+            .that(&pci.cached())
+            .is_equal_to(&1);
+        asserting("Cached ratio")
+            .that(&pci.ratio())
+            .is_equal_to(&1f32);
     }
 
     fn get_file() -> File {

@@ -6,8 +6,7 @@ pub mod fastfile {
         pub fn read<P: AsRef<Path>>(path: P, purge: bool) -> io::Result<(u64, u64)> {
             let path = path.as_ref();
             if purge {
-                crate::io::purge_cache(path)
-                    .expect("Failed to purge page cache for file");
+                crate::io::purge_cache(path).expect("Failed to purge page cache for file");
             }
 
             let mut ffr = FastFile::read(path)
@@ -42,8 +41,7 @@ pub mod fastfile {
         pub fn read<P: AsRef<Path>>(path: P, purge: bool) -> io::Result<(u64, u64)> {
             let path = path.as_ref();
             if purge {
-                crate::io::purge_cache(path)
-                    .expect("Failed to purge page cache for file");
+                crate::io::purge_cache(path).expect("Failed to purge page cache for file");
             }
 
             let mut ffr = FastFile::read(path)
@@ -80,8 +78,7 @@ pub mod stdlib {
         pub fn read<P: AsRef<Path>>(path: P, purge: bool) -> io::Result<(u64, u64)> {
             let path = path.as_ref();
             if purge {
-                crate::io::purge_cache(path)
-                    .expect("Failed to purge page cache for file");
+                crate::io::purge_cache(path).expect("Failed to purge page cache for file");
             }
 
             let file = File::open(path).expect("Failed to open path as File");

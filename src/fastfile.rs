@@ -197,7 +197,10 @@ impl io::Read for FastFileReader {
 
 #[cfg(test)]
 mod tests {
-    use super::{strategy, optimal_buffer_size, BackingReader, FastFile, FastFileReader, FastFileReaderBuilder, Result, os::PAGE_SIZE, MIN_READ_BUF_SIZE, MAX_READ_BUF_SIZE};
+    use super::{
+        optimal_buffer_size, os::PAGE_SIZE, strategy, BackingReader, FastFile, FastFileReader,
+        FastFileReaderBuilder, Result, MAX_READ_BUF_SIZE, MIN_READ_BUF_SIZE,
+    };
 
     use spectral::prelude::*;
 
@@ -208,32 +211,60 @@ mod tests {
 
         #[test]
         fn test_optimal_buffer_size_1024() {
-            asserting("size = 0").that(&optimal_buffer_size(0)).is_equal_to(&MIN_READ_BUF_SIZE);
-            asserting("size = 1").that(&optimal_buffer_size(1)).is_equal_to(&MIN_READ_BUF_SIZE);
-            asserting("size = 1023").that(&optimal_buffer_size(1023)).is_equal_to(&MIN_READ_BUF_SIZE);
-            asserting("size = 1024").that(&optimal_buffer_size(1024)).is_equal_to(&MIN_READ_BUF_SIZE);
+            asserting("size = 0")
+                .that(&optimal_buffer_size(0))
+                .is_equal_to(&MIN_READ_BUF_SIZE);
+            asserting("size = 1")
+                .that(&optimal_buffer_size(1))
+                .is_equal_to(&MIN_READ_BUF_SIZE);
+            asserting("size = 1023")
+                .that(&optimal_buffer_size(1023))
+                .is_equal_to(&MIN_READ_BUF_SIZE);
+            asserting("size = 1024")
+                .that(&optimal_buffer_size(1024))
+                .is_equal_to(&MIN_READ_BUF_SIZE);
         }
 
         #[test]
         fn test_optimal_buffer_size_page_size() {
-            asserting("size = PAGE_SIZE - 1").that(&optimal_buffer_size(PAGE_SIZE as u64 - 1)).is_equal_to(&PAGE_SIZE);
-            asserting("size = PAGE_SIZE").that(&optimal_buffer_size(PAGE_SIZE as u64)).is_equal_to(&PAGE_SIZE);
-            asserting("size = PAGE_SIZE + 1").that(&optimal_buffer_size(PAGE_SIZE as u64 + 1)).is_equal_to(&2*PAGE_SIZE);
-            asserting("size = 2*PAGE_SIZE + 1").that(&optimal_buffer_size(2*PAGE_SIZE as u64 + 1)).is_equal_to(&3*PAGE_SIZE);
+            asserting("size = PAGE_SIZE - 1")
+                .that(&optimal_buffer_size(PAGE_SIZE as u64 - 1))
+                .is_equal_to(&PAGE_SIZE);
+            asserting("size = PAGE_SIZE")
+                .that(&optimal_buffer_size(PAGE_SIZE as u64))
+                .is_equal_to(&PAGE_SIZE);
+            asserting("size = PAGE_SIZE + 1")
+                .that(&optimal_buffer_size(PAGE_SIZE as u64 + 1))
+                .is_equal_to(&2 * PAGE_SIZE);
+            asserting("size = 2*PAGE_SIZE + 1")
+                .that(&optimal_buffer_size(2 * PAGE_SIZE as u64 + 1))
+                .is_equal_to(&3 * PAGE_SIZE);
         }
 
         #[test]
         fn test_optimal_buffer_size_min_read_buf_size() {
-            asserting("size = MIN_READ_BUF_SIZE - 1").that(&optimal_buffer_size(MIN_READ_BUF_SIZE as u64 - 1)).is_equal_to(&MIN_READ_BUF_SIZE);
-            asserting("size = MIN_READ_BUF_SIZE").that(&optimal_buffer_size(MIN_READ_BUF_SIZE as u64)).is_equal_to(&MIN_READ_BUF_SIZE);
-            asserting("size = MIN_READ_BUF_SIZE + 1").that(&optimal_buffer_size(MIN_READ_BUF_SIZE as u64 + 1)).is_equal_to(&(2*MIN_READ_BUF_SIZE));
+            asserting("size = MIN_READ_BUF_SIZE - 1")
+                .that(&optimal_buffer_size(MIN_READ_BUF_SIZE as u64 - 1))
+                .is_equal_to(&MIN_READ_BUF_SIZE);
+            asserting("size = MIN_READ_BUF_SIZE")
+                .that(&optimal_buffer_size(MIN_READ_BUF_SIZE as u64))
+                .is_equal_to(&MIN_READ_BUF_SIZE);
+            asserting("size = MIN_READ_BUF_SIZE + 1")
+                .that(&optimal_buffer_size(MIN_READ_BUF_SIZE as u64 + 1))
+                .is_equal_to(&(2 * MIN_READ_BUF_SIZE));
         }
 
         #[test]
         fn test_optimal_buffer_size_max_read_buf_size() {
-            asserting("size = MAX_READ_BUF_SIZE - 1").that(&optimal_buffer_size(MAX_READ_BUF_SIZE as u64 - 1)).is_equal_to(&MAX_READ_BUF_SIZE);
-            asserting("size = MAX_READ_BUF_SIZE").that(&optimal_buffer_size(MAX_READ_BUF_SIZE as u64)).is_equal_to(&MAX_READ_BUF_SIZE);
-            asserting("size = MAX_READ_BUF_SIZE + 1").that(&optimal_buffer_size(MAX_READ_BUF_SIZE as u64 + 1)).is_equal_to(&(MAX_READ_BUF_SIZE));
+            asserting("size = MAX_READ_BUF_SIZE - 1")
+                .that(&optimal_buffer_size(MAX_READ_BUF_SIZE as u64 - 1))
+                .is_equal_to(&MAX_READ_BUF_SIZE);
+            asserting("size = MAX_READ_BUF_SIZE")
+                .that(&optimal_buffer_size(MAX_READ_BUF_SIZE as u64))
+                .is_equal_to(&MAX_READ_BUF_SIZE);
+            asserting("size = MAX_READ_BUF_SIZE + 1")
+                .that(&optimal_buffer_size(MAX_READ_BUF_SIZE as u64 + 1))
+                .is_equal_to(&(MAX_READ_BUF_SIZE));
         }
 
         #[test]

@@ -1,17 +1,17 @@
 #![feature(rustc_private)]
 extern crate libc;
 
-use std::env;
-use std::fs::File;
-use std::io::{self, BufWriter, Write};
-use std::path::Path;
+use std::{
+    env,
+    fs::File,
+    io::{self, BufWriter, Write},
+    path::Path,
+};
 
 fn main() {
-    let output_dir = env::var("OUT_DIR")
-        .expect("Could not determine OUT_DIR from environment");
+    let output_dir = env::var("OUT_DIR").expect("Could not determine OUT_DIR from environment");
 
-    generate_os_consts_file(output_dir)
-        .expect("Failed to write OS consts file");
+    generate_os_consts_file(output_dir).expect("Failed to write OS consts file");
 }
 
 fn generate_os_consts_file<T: AsRef<Path>>(output_path: T) -> io::Result<()> {
@@ -25,7 +25,5 @@ fn generate_os_consts_file<T: AsRef<Path>>(output_path: T) -> io::Result<()> {
 }
 
 fn get_system_page_size() -> ::libc::c_long {
-    unsafe {
-        ::libc::sysconf(libc::_SC_PAGESIZE)
-    }
+    unsafe { ::libc::sysconf(libc::_SC_PAGESIZE) }
 }

@@ -2,11 +2,11 @@
 mod macos;
 
 #[cfg(target_os = "macos")]
+pub use macos::get_page_cache_info;
+#[cfg(target_os = "macos")]
 pub use macos::read_advise;
 #[cfg(target_os = "macos")]
 pub use macos::read_ahead;
-#[cfg(target_os = "macos")]
-pub use macos::get_page_cache_info;
 
 // pub const PAGE_SIZE: usize = ???;
 include!(concat!(env!("OUT_DIR"), "/os_consts.rs"));
@@ -28,6 +28,4 @@ impl PageCacheInfo {
     pub fn ratio(&self) -> f32 {
         self.cached as f32 / self.total as f32
     }
-
 }
-

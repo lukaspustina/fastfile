@@ -1,9 +1,11 @@
 use libc;
 use ring::digest::{Context, Digest, SHA256};
-use std::io::{self, Write};
-use std::fs::File;
-use std::path::Path;
-use std::os::unix::io::AsRawFd;
+use std::{
+    fs::File,
+    io::{self, Write},
+    os::unix::io::AsRawFd,
+    path::Path,
+};
 
 pub const MAX_READ_BUF_SIZE: usize = 64 * 1024;
 
@@ -86,7 +88,14 @@ pub fn purge_cache<T: AsRef<Path>>(path: T) -> io::Result<()> {
     let file_size = file.metadata()?.len();
     let fd = file.as_raw_fd();
     unsafe {
-        let mem = libc::mmap(std::ptr::null_mut(), file_size as libc::size_t, libc::PROT_READ, libc::MAP_SHARED, fd, 0);
+        let mem = libc::mmap(
+            std::ptr::null_mut(),
+            file_size as libc::size_t,
+            libc::PROT_READ,
+            libc::MAP_SHARED,
+            fd,
+            0,
+        );
         if mem == libc::MAP_FAILED {
             eprintln!("mmap failed");
             return Err(io::Error::from(io::ErrorKind::Other));
@@ -138,7 +147,7 @@ mod tests {
 
     #[test]
     fn conuming_sink_src_exact_buf() {
-        let buf = vec![0u8; 64*1024];
+        let buf = vec![0u8; 64 * 1024];
 
         let mut sink = ConsumingSink::new();
         let res = sink.write(&buf);
@@ -148,7 +157,7 @@ mod tests {
 
     #[test]
     fn conuming_sink_src_larger_buf() {
-        let buf = vec![0u8; 64*1024 + 1];
+        let buf = vec![0u8; 64 * 1024 + 1];
 
         let mut sink = ConsumingSink::new();
         let res = sink.write(&buf);
