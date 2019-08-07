@@ -14,7 +14,11 @@ fn bench_impls(c: &mut Criterion) {
         "fastfile macos (NOT cached)",
         ParameterizedBenchmark::new(
             "read",
-            |b, param| b.iter(|| methods::fastfile::read::read(&param.path, true)),
+            |b, param| b.iter_batched_ref(
+                || crate::io::purge_cache(&param.path).expect("Failed to purge page cache for file"),
+                |_| methods::fastfile::read::read(&param.path),
+                BatchSize::NumIterations(1)
+            ),
             params,
         )
         .throughput(|param| Throughput::Bytes(param.size as u32))
