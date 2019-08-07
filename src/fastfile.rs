@@ -15,8 +15,7 @@ pub const MAX_READ_BUF_SIZE: usize = 4 * 1024 * 1024;
 macro_rules! prepare_buf {
     ($reader:ident, $size:tt) => {
         unsafe {
-            let mut buf = std::mem::MaybeUninit::<[u8; $size]>::uninit();
-            $reader.initializer().initialize(&mut *buf.as_mut_ptr());
+            let buf = std::mem::MaybeUninit::<[u8; $size]>::uninit();
             buf.assume_init()
         };
     };
@@ -124,17 +123,17 @@ impl FastFileReader {
     }
 
     fn init_buffer(&mut self) {
-        use std::io::Read;
-
         let buf_size = optimal_buffer_size(self.size);
         let mut vec: Vec<u8> = Vec::with_capacity(buf_size);
         unsafe {
             vec.set_len(buf_size);
         }
+        /*
         let buf = vec.as_mut_slice();
         unsafe {
             self.inner.initializer().initialize(&mut *buf);
         }
+        */
         self.buffer = Some(vec);
     }
 }
