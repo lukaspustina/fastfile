@@ -14,10 +14,10 @@ pub mod errors;
 pub mod fastfile;
 
 /// Internal abstraction of OS specific function
-mod os;
+pub mod os;
 
 /// OS specific file IO strategies
-mod strategy;
+pub mod strategy;
 
 /// `prelude` for the most important types and functions
 pub mod prelude {

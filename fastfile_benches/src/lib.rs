@@ -19,3 +19,4 @@ pub static FILE_SIZES: &[usize] = &[
 
 pub mod benches;
 pub mod io;
+pub mod utils;

@@ -24,7 +24,11 @@ libc = "0.2"
 memmap = "0.7"
 
 [dev-dependencies]
+fastfile_benches = { path = "fastfile_benches" }
+rand = { version = "0.7", features = ["small_rng"] }
+ring = "0.14"
 spectral = "0.6"
+tempfile = "3"
 
 [profile.release]
 debug = true

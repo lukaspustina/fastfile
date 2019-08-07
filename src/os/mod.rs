@@ -11,11 +11,13 @@ pub use macos::read_ahead;
 // pub const PAGE_SIZE: usize = ???;
 include!(concat!(env!("OUT_DIR"), "/os_consts.rs"));
 
+#[allow(dead_code)]
 pub struct PageCacheInfo {
     total: usize,
     cached: usize,
 }
 
+#[allow(dead_code)]
 impl PageCacheInfo {
     pub fn total(&self) -> usize {
         self.total
