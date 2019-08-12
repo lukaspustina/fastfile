@@ -3,8 +3,10 @@ use fastfile_benches::utils::{create_random_test_file};
 use std::{
     env,
     io::{self, Write},
+    fmt::{self, Display},
     fs::File,
-    path::Path,
+    marker::PhantomData,
+    path::{Path},
     time::Instant,
 };
 
@@ -12,19 +14,93 @@ trait AsCsv {
     fn write_as_csv<W: Write>(&self, writer: &mut W) -> io::Result<()>;
 }
 
+struct Benchmark<'a, T, F: Fn(&T) -> ()> {
+    name: &'a str,
+    params: &'a[Param<'a, T>],
+    functions: Vec<Function<'a, T, F>>,
+    iterations: usize,
+}
+
+impl<'a, T, F: Fn(&T) -> ()> Benchmark<'a, T, F> {
+    fn new(name: &'a str, params: &'a[Param<'a, T>], function_name: &'a str, f: F, iterations: usize) -> Benchmark<'a, T, F> {
+        let mut functions = Vec::new();
+        let function = Function {
+            name: function_name,
+            function: f,
+            _param_type: PhantomData,
+        };
+        functions.push(function);
+        Benchmark {
+            name,
+            params,
+            functions,
+            iterations,
+        }
+    }
+
+    fn benchmark(&self) -> BenchmarkResult {
+        let num_of_samples = self.params.len() * self.functions.len();
+        let mut res = BenchmarkResult::new(num_of_samples);
+
+        for f in &self.functions {
+            let func = &f.function;
+            for p in self.params {
+                let mut run_res = BenchmarkResult::new(self.params.len());
+                for _ in 0..self.iterations {
+                    // TODO: pre_run
+                    // fastfile_benches::io::purge_cache(&test_file)?;
+
+                    // measure
+                    let time_ns = measure_ns(
+                        || func(&p.value)
+                    );
+                    run_res.add(Sample::new(f.name, p.name, time_ns));
+                }
+                println!("{}/{}: {}", f.name, p.name, run_res.samples.summary());
+                res.samples.append(&mut run_res.samples);
+            }
+        }
+
+        res
+    }
+}
+
+fn measure_ns<O, F: Fn() -> O>(func: F) -> u128 {
+    let start = Instant::now();
+    func();
+    start.elapsed().as_nanos()
+}
+
+struct Param<'a, T> {
+    name: &'a str,
+    value: T,
+}
+
+impl<'a, T> Param<'a, T> {
+    fn new(name: &'a str, value: T) -> Param<'a, T> {
+        Param {
+            name,
+            value,
+        }
+    }
+}
+
+struct Function<'a, T, F> where F: Fn(&T) -> () {
+    name: &'a str,
+    function: F,
+    _param_type: PhantomData<T>,
+}
+
+
 #[derive(Debug)]
 struct BenchmarkResult<'a> {
-    pub file_size: usize,
-    pub strategy: &'a str,
     pub samples: Vec<Sample<'a>>,
 }
 
 impl<'a> BenchmarkResult<'a> {
-    fn new(num: usize, file_size: usize, strategy: &'a str) -> BenchmarkResult {
+    fn new(num: usize) -> BenchmarkResult<'a> {
         let samples = Vec::with_capacity(num);
         BenchmarkResult {
-            file_size,
-            strategy,
             samples
         }
     }
@@ -33,27 +109,14 @@ impl<'a> BenchmarkResult<'a> {
         self.samples.push(sample)
     }
 
-    fn summary(&self) -> Summary {
-        let mut min = u128::max_value();
-        let mut max = u128::min_value();
-        let mut sum = 0;
 
-        for s in &self.samples {
-            sum += s.time;
-            min = min.min(s.time);
-            max = max.max(s.time);
-        }
-        let mean = sum / self.samples.len() as u128;
-
-        Summary::new(min, max, mean)
-    }
 }
 
 impl<'a> AsCsv for BenchmarkResult<'a> {
     fn write_as_csv<W: Write>(&self, writer: &mut W) -> io::Result<()> {
         writeln!(writer, "strategy,file_size,time")?;
         for s in &self.samples {
-            writeln!(writer, "{},{},{}", s.strategy, s.file_size, s.time)?;
+            writeln!(writer, "{},size-{},{}", s.name, s.param, s.time_ns)?;
         }
 
         Ok(())
@@ -62,15 +125,19 @@ impl<'a> AsCsv for BenchmarkResult<'a> {
 
 #[derive(Debug)]
 struct Sample<'a> {
-    pub strategy: &'a str,
-    pub file_size: usize,
-    pub time: u128,
+    pub name: &'a str,
+    pub param: &'a str,
+    pub time_ns: u128,
 }
 
 impl<'a> Sample<'a> {
-    fn new(strategy: &'a str, file_size: usize, time: u128) -> Sample {
-        Sample { strategy, file_size, time }
+    fn new(name: &'a str, param: &'a str, time_ns: u128) -> Sample<'a> {
+        Sample { name, param, time_ns }
     }
+}
+
+trait Summarize {
+    fn summary(&self) -> Summary;
 }
 
 #[derive(Debug)]
@@ -81,47 +148,40 @@ struct Summary {
 }
 
 impl Summary {
-   fn new(min: u128, max: u128, mean: u128) -> Summary {
+    fn new(min: u128, max: u128, mean: u128) -> Summary {
         Summary {
-            min, max, mean,
+            min, max, mean
         }
     }
 }
 
-fn benchmark<'a, F: Fn(&Path) -> ()>(num: usize, size: usize, reader: F, name: &'a str) -> io::Result<BenchmarkResult<'a>> {
-    let mut res = BenchmarkResult::new(num, size, name);
-
-    // setup
-    let test_file = create_random_test_file(size)?;
-
-    for _ in 0..num {
-        // pre
-        fastfile_benches::io::purge_cache(&test_file)?;
-
-        // measure
-        let time = measure(
-            || reader(&test_file.as_path())
-        );
-        res.add(Sample::new(&res.strategy, res.file_size, time));
-
-        // post
+impl Display for Summary {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "[{} {} {}]", self.min, self.mean, self.max)
     }
-
-    // teardown
-
-    Ok(res)
 }
 
-fn measure<O, F: Fn() -> O>(func: F) -> u128 {
-    let start = Instant::now();
-    func();
-    start.elapsed().as_nanos()
+impl Summarize for Vec<Sample<'_>> {
+    fn summary(&self) -> Summary {
+        let mut min = u128::max_value();
+        let mut max = u128::min_value();
+        let mut sum = 0;
+
+        for s in self.iter() {
+            sum += s.time_ns;
+            min = min.min(s.time_ns);
+            max = max.max(s.time_ns);
+        }
+        let mean = sum / self.len() as u128;
+
+        Summary::new(min, max, mean)
+    }
 }
 
-fn fastread(path: &Path) {
+fn fastread<P: AsRef<Path>>(path: &P) {
     use fastfile::FastFileRead;
 
-    let mut ffr = FastFile::read(&path)
+    let mut ffr = FastFile::read(path)
         .expect("Failed to create FastFileReaderBuilder")
         .open()
         .expect("Failed to open path as FastFile");
@@ -135,20 +195,34 @@ fn fastread(path: &Path) {
 }
 
 fn main() {
-    let size: usize = env::args()
+    let num: usize = env::args()
         .nth(1)
         .map(|x| x.parse::<usize>().unwrap())
-        .unwrap_or_else(|| 1024usize);
-    let num: usize = env::args()
-        .nth(2)
-        .map(|x| x.parse::<usize>().unwrap())
         .unwrap_or_else(|| 5usize);
-    let output_file: Option<String> = env::args().nth(3);
+    let output_file: Option<String> = env::args().nth(2);
 
-    println!("Running {} iteration with file size {} bytes", num, size);
-    let res = benchmark(num, size, fastread, "fastread").expect("Failed to run benchmark");
-    let summary = res.summary();
-    println!("Summary: {:#?}", summary);
+
+    let params = vec![
+        Param::new("1024", create_random_test_file(1024).unwrap()),
+        Param::new("2048", create_random_test_file(2048).unwrap()),
+        Param::new("4096", create_random_test_file(4096).unwrap()),
+        Param::new("10240", create_random_test_file(10240).unwrap()),
+        Param::new("102400", create_random_test_file(102400).unwrap()),
+        Param::new("1024000", create_random_test_file(1024000).unwrap()),
+        Param::new("10240000", create_random_test_file(10240000).unwrap()),
+    ];
+
+    let benchmark = Benchmark::new(
+        "Fastfile read",
+        &params,
+        "fastread",
+        fastread,
+        num,
+    );
+
+    println!("Running benchmark '{}' with {} params for {} functions", benchmark.name, benchmark.params.len(), benchmark.functions.len());
+    let res = benchmark.benchmark();
+    println!("Received {} samples (expected {})", res.samples.len(), benchmark.params.len() * benchmark.functions.len() * benchmark.iterations);
 
     if let Some(path) = output_file {
         let mut file = File::create(path)

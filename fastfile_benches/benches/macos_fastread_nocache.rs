@@ -14,11 +14,16 @@ fn bench_impls(c: &mut Criterion) {
         "fastfile macos (NOT cached)",
         ParameterizedBenchmark::new(
             "fastread",
-            |b, param| b.iter_batched_ref(
-                || crate::io::purge_cache(&param.path).expect("Failed to purge page cache for file"),
-                |_| methods::fastfile::fastread::read(&param.path),
-                BatchSize::NumIterations(1)
-            ),
+            |b, param| {
+                b.iter_batched_ref(
+                    || {
+                        crate::io::purge_cache(&param.path)
+                            .expect("Failed to purge page cache for file")
+                    },
+                    |_| methods::fastfile::fastread::read(&param.path),
+                    BatchSize::NumIterations(1),
+                )
+            },
             params,
         )
         .throughput(|param| Throughput::Bytes(param.size as u32))

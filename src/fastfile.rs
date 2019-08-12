@@ -335,9 +335,12 @@ mod tests {
         }
     }
 
-    fn verify_reader<T: strategy::ReaderStrategy, F: Fn(&mut FastFileReader) -> (u64, Digest)>(reader_strategy: &T, reader: F) {
+    fn verify_reader<T: strategy::ReaderStrategy, F: Fn(&mut FastFileReader) -> (u64, Digest)>(
+        reader_strategy: &T,
+        reader: F,
+    ) {
         let mut rng = SmallRng::from_entropy();
-        let size = rng.gen_range(1024*1024+1, 2*1024*1024);
+        let size = rng.gen_range(1024 * 1024 + 1, 2 * 1024 * 1024);
 
         let path = fastfile_benches::utils::create_random_test_file(size)
             .expect("Failed to create test file");
@@ -352,7 +355,11 @@ mod tests {
 
         let expected_digest = fastfile_benches::utils::get_digest_for_path(&path)
             .expect("Failed to compute expected digest");
-        assert_eq!(digest.as_ref(), expected_digest.as_ref(), "Computed digest differes from expected digest");
+        assert_eq!(
+            digest.as_ref(),
+            expected_digest.as_ref(),
+            "Computed digest differes from expected digest"
+        );
     }
 
     struct TestFileReaderStragegy {}

@@ -1,9 +1,7 @@
 use crate::utils;
 
 use std::{
-    fmt,
-    fs,
-    io,
+    fmt, fs, io,
     path::{Path, PathBuf},
 };
 

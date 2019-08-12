@@ -1,11 +1,11 @@
-use ring::digest::{Context, Digest, SHA256};
 use rand::{rngs::SmallRng, Rng, SeedableRng};
-use tempfile::NamedTempFile;
+use ring::digest::{Context, Digest, SHA256};
 use std::{
     fs::File,
     io::{self, BufReader, Read, Write},
     path::{Path, PathBuf},
 };
+use tempfile::NamedTempFile;
 
 pub fn create_random_test_file(size: usize) -> io::Result<PathBuf> {
     let path = {
@@ -17,7 +17,10 @@ pub fn create_random_test_file(size: usize) -> io::Result<PathBuf> {
     {
         let file = File::open(&path)?;
         let file_size = file.metadata()?.len();
-        assert_eq!(file_size, size as u64, "Failed to fill file with random data");
+        assert_eq!(
+            file_size, size as u64,
+            "Failed to fill file with random data"
+        );
     }
 
     Ok(path)
@@ -61,4 +64,3 @@ pub fn get_digest_for_path<P: AsRef<Path>>(path: P) -> io::Result<Digest> {
 
     Ok(digest.finish())
 }
-
