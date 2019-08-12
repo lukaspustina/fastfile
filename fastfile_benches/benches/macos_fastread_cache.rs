@@ -1,28 +1,78 @@
-#![feature(read_initializer)]
+use fastfile_benches::FILE_SIZES;
+use fastfile_benches::benches::*;
+use fastfile_benches::utils::create_random_test_file;
 
-use fastfile_benches::{benches::*, *};
+use fastfile::prelude::*;
+use std::{
+    env,
+    io,
+    fs::{self, File},
+    path::{Path, PathBuf},
+};
 
-use criterion::*;
-use std::path::PathBuf;
+fn fastread<P: AsRef<Path>>(path: &P) {
+    use fastfile::FastFileRead;
 
-fn bench_impls(c: &mut Criterion) {
-    let params = setup(&FILE_SIZES).expect("failed to generate test files");
-    let paths: Vec<PathBuf> = params.iter().map(|x| x.path.clone()).collect();
+    let mut ffr = FastFile::read(path)
+        .expect("Failed to create FastFileReaderBuilder")
+        .open()
+        .expect("Failed to open path as FastFile");
 
-    let plot_config = PlotConfiguration::default().summary_scale(AxisScale::Logarithmic);
-    c.bench(
-        "fastfile macos (cached)",
-        ParameterizedBenchmark::new(
-            "fastread",
-            |b, param| b.iter(|| methods::fastfile::fastread::read(&param.path)),
-            params,
-        )
-        .throughput(|param| Throughput::Bytes(param.size as u32))
-        .plot_config(plot_config),
-    );
-
-    teardown(&paths);
+    loop {
+        let buf = ffr.read().expect("Failed to fastread file");
+        if buf.is_empty() {
+            break;
+        };
+    }
 }
 
-criterion_group!(name = benches; config = Criterion::default().sample_size(10); targets = bench_impls);
-criterion_main!(benches);
+fn main() {
+    let num: usize = env::args()
+        .nth(1)
+        .map(|x| x.parse::<usize>().unwrap())
+        .unwrap_or_else(|| 5usize);
+    let output_file: Option<String> = env::args().nth(2);
+
+    let params = prepare(FILE_SIZES)
+        .expect("Failed to create test files");
+
+    let benchmark = Benchmark::new("FastFile read", &params, num)
+        .add_func("fastread", fastread);
+
+    let res = benchmark.benchmark();
+
+    if let Some(ref path) = output_file {
+        write_csv(path, &res)
+            .expect("Failed write output file");
+    }
+
+    cleanup(params)
+        .expect("Failed to clean up test files");
+}
+
+fn prepare(file_sizes: &[usize]) -> io::Result<Vec<Param<PathBuf>>> {
+    let mut params = Vec::with_capacity(file_sizes.len());
+
+    for size in file_sizes {
+        let path = create_random_test_file(1024)?;
+        let param_str = format!("{}", size);
+        let p = Param::new(param_str, path);
+        params.push(p);
+    }
+
+    Ok(params)
+}
+
+fn write_csv<P: AsRef<Path>>(path: P, res: &BenchmarkResult) -> io::Result<()> {
+    let mut file = File::create(path)?;
+    res.write_as_csv(&mut file) 
+}
+
+fn cleanup(params: Vec<Param<PathBuf>>) -> io::Result<()> {
+    for p in params {
+        fs::remove_file(p.value())?;
+    }
+
+    Ok(())
+}
+

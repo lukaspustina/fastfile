@@ -10,7 +10,6 @@ name = "fastfile_benches"
 bench = false
 
 [dependencies]
-criterion = "0.2"
 fastfile = { path = "../" }
 libc = "0.2"
 rand = { version = "0.7", features = ["small_rng"] }
@@ -25,21 +24,5 @@ name = "macos_fastread_cache"
 harness = false
 
 [[bench]]
-name = "macos_read_cache"
-harness = false
-
-[[bench]]
-name = "macos_compare_read_cache"
-harness = false
-
-[[bench]]
 name = "macos_fastread_nocache"
-harness = false
-
-[[bench]]
-name = "macos_read_nocache"
-harness = false
-
-[[bench]]
-name = "macos_compare_read_nocache"
 harness = false
