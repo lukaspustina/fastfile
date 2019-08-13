@@ -10,6 +10,7 @@ name = "fastfile_benches"
 bench = false
 
 [dependencies]
+byte-unit = "3.0"
 fastfile = { path = "../" }
 libc = "0.2"
 rand = { version = "0.7", features = ["small_rng"] }

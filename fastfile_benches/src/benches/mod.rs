@@ -1,3 +1,4 @@
+use byte_unit::Byte;
 use std::{
     io::{self, Write},
     fmt::{self, Display},
@@ -66,12 +67,12 @@ impl<'a, T> Benchmark<'a, T> {
         let num_of_samples = self.params.len() * self.functions.len();
         let mut res = BenchmarkResult::new(num_of_samples);
 
-        println!("Running benchmark '{}' with {} param(s) for {} function(s)\n", self.name, self.params.len(), self.functions.len());
+        println!("Running benchmark '{}' with {} param(s) for {} function(s) and {} iteration(s)\n", self.name, self.params.len(), self.functions.len(), self.iterations);
         for f in &self.functions {
             let func = &f.function;
             for p in self.params {
                 let mut run_res = BenchmarkResult::new(self.params.len());
-                println!("\t{} / {}", f.name, p.name);
+                println!("\t{} / {}", f.name, p.display_name);
                 for _ in 0..self.iterations {
                     if let Some(ref setup) = self.setup {
                         setup(&p.value)
@@ -86,7 +87,9 @@ impl<'a, T> Benchmark<'a, T> {
                         teardown(&p.value)
                     }
                 }
-                println!("\t\t\t{}", run_res.samples.summary());
+                let summary = run_res.samples.summary();
+                println!("\t\t\t{}", summary);
+                println!("\t\t\t{}", ThroughputSummary::new(&summary, p.amount));
                 res.samples.append(&mut run_res.samples);
             }
         }
@@ -104,19 +107,28 @@ fn measure_ns<O, F: Fn() -> O>(func: F) -> u128 {
 
 pub struct Param<T> {
     name: String,
+    /// value to use for displaying this parameter
+    display_name: String,
+    amount: usize, 
     value: T,
 }
 
 impl<T> Param<T> {
-    pub fn new<S: Into<String>>(name: S, value: T) -> Param<T> {
+    pub fn new<S: Into<String>>(name: S, display_name: S, amount: usize, value: T) -> Param<T> {
         Param {
             name: name.into(),
+            display_name: display_name.into(),
+            amount,
             value,
         }
     }
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    pub fn amount(&self) -> usize {
+        self.amount
     }
 
     pub fn value(&self) -> &T {
@@ -195,7 +207,10 @@ impl Summary {
 
 impl Display for Summary {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[{} {} {}]", self.min, self.mean, self.max)
+        let min = self.min as f64 / 1_000_000 as f64;
+        let mean = self.mean as f64 / 1_000_000 as f64;
+        let max = self.max as f64 / 1_000_000 as f64;
+        write!(f, "[{:7.2} ms, {:7.2} ms, {:7.2} ms]", min, mean, max)
     }
 }
 
@@ -215,3 +230,36 @@ impl Summarize for Vec<Sample<'_>> {
         Summary::new(min, max, mean)
     }
 }
+
+#[derive(Debug)]
+pub struct ThroughputSummary<'a> {
+    summary: &'a Summary,
+    amount: usize,
+}
+
+impl<'a> ThroughputSummary<'a> {
+    pub fn new(summary: &'a Summary, amount: usize) -> ThroughputSummary {
+        ThroughputSummary {
+            summary,
+            amount,
+        }
+    }
+}
+
+impl<'a> Display for ThroughputSummary<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let min = self.amount as f64 / (self.summary.min as f64 / 1_000_000_000f64); // run time in secounds
+        let mean = self.amount as f64 / (self.summary.mean as f64 / 1_000_000_000f64);
+        let max = self.amount as f64 / (self.summary.max as f64 / 1_000_000_000f64); 
+
+        let bytes_min = Byte::from_bytes(min as u128);
+        let bytes_mean = Byte::from_bytes(mean as u128);
+        let bytes_max = Byte::from_bytes(max as u128);
+        write!(f, "[{}/s, {}/s, {}/s]",
+            bytes_min.get_appropriate_unit(true).format(2),
+            bytes_mean.get_appropriate_unit(true).format(2),
+            bytes_max.get_appropriate_unit(true).format(2)
+        )
+    }
+}
+
