@@ -2,3 +2,6 @@
 fastfile_benches/target
 **/*.rs.bk
 Cargo.lock
+**/.Rhistory
+fastfile_benches/results/current
+
