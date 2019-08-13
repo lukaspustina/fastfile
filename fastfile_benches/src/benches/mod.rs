@@ -66,11 +66,12 @@ impl<'a, T> Benchmark<'a, T> {
         let num_of_samples = self.params.len() * self.functions.len();
         let mut res = BenchmarkResult::new(num_of_samples);
 
-        println!("Running benchmark '{}' with {} param(s) for {} function(s)", self.name, self.params.len(), self.functions.len());
+        println!("Running benchmark '{}' with {} param(s) for {} function(s)\n", self.name, self.params.len(), self.functions.len());
         for f in &self.functions {
             let func = &f.function;
             for p in self.params {
                 let mut run_res = BenchmarkResult::new(self.params.len());
+                println!("\t{} / {}", f.name, p.name);
                 for _ in 0..self.iterations {
                     if let Some(ref setup) = self.setup {
                         setup(&p.value)
@@ -85,11 +86,11 @@ impl<'a, T> Benchmark<'a, T> {
                         teardown(&p.value)
                     }
                 }
-                println!("{}/{}: {}", f.name, p.name, run_res.samples.summary());
+                println!("\t\t\t{}", run_res.samples.summary());
                 res.samples.append(&mut run_res.samples);
             }
         }
-        println!("Received {} sample(s) (expected {})", res.samples.len(), self.params.len() * self.functions.len() * self.iterations);
+        println!("\nReceived {} sample(s) (expected {})", res.samples.len(), self.params.len() * self.functions.len() * self.iterations);
 
         res
     }
@@ -151,9 +152,9 @@ impl<'a> BenchmarkResult<'a> {
 
 impl<'a> AsCsv for BenchmarkResult<'a> {
     fn write_as_csv<W: Write>(&self, writer: &mut W) -> io::Result<()> {
-        writeln!(writer, "strategy,file_size,time")?;
+        writeln!(writer, "method,file_size,time")?;
         for s in &self.samples {
-            writeln!(writer, "{},size-{},{}", s.name, s.param, s.time_ns)?;
+            writeln!(writer, "{},{},{}", s.name, s.param, s.time_ns)?;
         }
 
         Ok(())

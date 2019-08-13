@@ -31,25 +31,23 @@ fn purge_cache<P: AsRef<Path>>(path: &P) {
 }
 
 fn main() {
-    let num: usize = env::args()
-        .nth(1)
-        .map(|x| x.parse::<usize>().unwrap())
-        .unwrap_or_else(|| 5usize);
-    let output_file: Option<String> = env::args().nth(2);
-
+    let results_dir = "./results/current";
+    let benchmark_name = "read-nocache-fastread";
+    let iterations = 100;
     let params = prepare(FILE_SIZES)
         .expect("Failed to create test files");
 
-    let benchmark = Benchmark::new("FastFile read", &params, num)
+    let benchmark = Benchmark::new(benchmark_name, &params, iterations)
         .setup(purge_cache)
         .add_func("fastread", fastread);
 
     let res = benchmark.benchmark();
 
-    if let Some(ref path) = output_file {
-        write_csv(path, &res)
-            .expect("Failed write output file");
-    }
+    fs::create_dir_all(results_dir)
+        .expect("Failed create results directory");
+    let output_path = format!("{}/{}.csv", results_dir, benchmark_name);
+    write_csv(output_path, &res)
+        .expect("Failed write output file");
 
     cleanup(params)
         .expect("Failed to clean up test files");
