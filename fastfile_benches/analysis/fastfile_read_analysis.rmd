@@ -4,30 +4,100 @@ output:
   html_document:
     number_sections: TRUE
 params:
-  data_file: "../results/current/current.csv"
+  current_file:
   date: !r Sys.Date()
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(forcats)
+library(hrbrthemes)
+library(viridis)
+library(scales)
+library(gdata)
+library(plotly)
 ```
 
 # Overview
 
-```{r}
-reads <- read.table(params$data_file)
-length(reads)
+```{r overview}
+data <- read.table(params$current_file, header=TRUE, sep=",")
+data$time <- data$time / 1000000 # ns -> ms
+data$file_size_human <- humanReadable(x=data$file_size, units="auto", standard="IEC", digits=0, width=NULL, sep=" ", justify="right")
+
+current <- data
+current$file_size_human <- factor(current$file_size_human, levels = unique(current$file_size_human[order(current$file_size)]))
+
+ggplot() +
+#  scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format("log10", math_format(10^.x))) +
+  scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) round(x, digits=2))) +
+  geom_violin(data=current, aes(x=file_size_human, y=time), fill="#56B4E9", color="#56B4E9") +
+  theme_ipsum() +
+  theme(legend.position="none") +
+  coord_flip() + # This switch X and Y axis and allows to get the horizontal version
+  ggtitle("Run time PDF per file size") +
+  xlab("File Size") +
+  ylab("Run Time [ms]")
+```
+
+# Mean Run Time
+
+```{r meanruntime}
+means <- aggregate(current$time, list(current$file_size), mean)
+colnames(means) <- c("file_size", "mean_time")
+means$file_size_human <- humanReadable(x=means$file_size, units="auto", standard="IEC", digits=0, width=NULL, sep=" ", justify="right")
+means$file_size_human <- factor(means$file_size_human, levels = unique(means$file_size_human[order(means$file_size)]))
+
+hr <- function(x) {
+  x <- replace(x, is.na(x), 0)
+  humanReadable(x, units="auto", standard="IEC", digits=0, width=NULL, sep=" ", justify="right")
+}
+
+p <- ggplot(data=means, aes(x=file_size, y=mean_time)) +
+  scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) hr(x))) +
+  scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) round(x, digits=2))) +
+  geom_segment(
+    aes(xend=c(tail(file_size, n=-1), NA), yend=c(tail(mean_time, n=-1), NA)), color="grey") +
+  geom_point(shape=21, color="black", fill="#56B4E9", size=3) +
+  theme_ipsum() +
+  ggtitle("Mean runtime") +
+  xlab("File Size") +
+  ylab("Mean Run Time [ms]")
+ggplotly(p)
+```
+
+# Individual File Sizes
+
+```{r individual}
+for (file_size in unique(current$file_size)) {
+  current_fs <- current[current$file_size == file_size,]
+  title <- sprintf("Runtime density for file size %s", current_fs$file_size_human[1])
+  p <- ggplot() +
+    geom_density(data=current_fs, aes(x=time), fill="#56B4E9", color="#56B4E9", alpha=0.8) +
+    geom_vline(data=current_fs, aes(xintercept=median(time)), color="#56B4E9", size=1) +
+    geom_vline(data=current_fs, aes(xintercept=mean(time)), color="#56B4E9", lty="dashed", size=1) +
+    ggtitle(title) +
+    theme_ipsum() +
+    xlab("Run Time [ms]") +
+    ylab("Density")
+  print(p)
+}
 ```
 
 
 &nbsp;
 <hr />
-<p style="text-align: center;">A work by <a href="https://lukas.pustina.de/">Lukas Pustina</a></p>
+<p style="text-align: center;"><a href="https://github.com/lukaspustina/fastfile">FastFile</a> by <a href="https://lukas.pustina.de/">Lukas Pustina</a></p>
 
 <!-- Add icon library -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.9.0/css/fontawesome.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.9.0/css/brands.min.css">
-
 
 <!-- Add font awesome icons -->
 <p style="text-align: center;">

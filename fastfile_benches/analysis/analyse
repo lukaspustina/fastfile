@@ -4,23 +4,32 @@ library("optparse")
 library("rmarkdown")
 
 option_list = list(
-    make_option(c("-f", "--file"), type="character", default=NULL, help="dataset file name", metavar="character"),
-    make_option(c("-o", "--out"), type="character", default="out.txt", help="output file name [default= %default]", metavar="character")
+    make_option(c("-c", "--current_file"), type="character", default=NULL, help="results file name", metavar="character"),
+    make_option(c("--out_dir"), type="character", default="../results/current", help="output directory [default=%default]", metavar="character"),
+    make_option(c("-o", "--out_prefix"), type="character", default=NULL, help="output file name prefix", metavar="character")
 ); 
 
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
-if (is.null(opt$file)){
+if (is.null(opt$current_file)){
   print_help(opt_parser)
-  stop("At least one argument must be supplied (input file).n", call=FALSE)
+  stop("Results file name must be provided", call=FALSE)
 }
 
+if (is.null(opt$out_prefix)){
+  print_help(opt_parser)
+  stop("Output filen name must be provided", call=FALSE)
+}
+
+out_file <- sprintf("%s/%s.html", opt$out_dir, opt$out_prefix)
+
 render("fastfile_read_analysis.rmd",
-       output_file = "../results/current/current",
-       clean = TRUE,
-       params = list(
-                     data_file = "../results/current/current.csv"
-                )
+  output_file = out_file,
+  clean = TRUE,
+  params = list(
+    current_file = opt$current_file
+  )
 )
 
+# vim: set ft=R:
