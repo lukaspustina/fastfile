@@ -4,7 +4,8 @@ library("optparse")
 library("rmarkdown")
 
 option_list = list(
-    make_option(c("-c", "--current_file"), type="character", default=NULL, help="results file name", metavar="character"),
+    make_option(c("-c", "--current_file"), type="character", default=NULL, help="results file name of current benchmark", metavar="character"),
+    make_option(c("-p", "--previous_file"), type="character", default=NULL, help="results file name of previous benchmark to compare with", metavar="character"),
     make_option(c("--out_dir"), type="character", default="../results/current", help="output directory [default=%default]", metavar="character"),
     make_option(c("-o", "--out_prefix"), type="character", default=NULL, help="output file name prefix", metavar="character")
 ); 
@@ -28,7 +29,8 @@ render("fastfile_read_analysis.rmd",
   output_file = out_file,
   clean = TRUE,
   params = list(
-    current_file = opt$current_file
+    current_file = opt$current_file,
+    previous_file = opt$previous_file
   )
 )
 

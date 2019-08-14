@@ -5,11 +5,13 @@ output:
     number_sections: TRUE
 params:
   current_file:
+  previous_file:
   date: !r Sys.Date()
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+options(conflicts.policy = list(error = FALSE, warn = FALSE))
 ```
 
 ```{r}
@@ -20,56 +22,97 @@ library(forcats)
 library(hrbrthemes)
 library(viridis)
 library(scales)
-library(gdata)
-library(plotly)
+library(gdata, include.only=c("humanReadable"))
+```
+
+```{r reading_results}
+
+load_results <- function(file) {
+  data <- read.table(file, header=TRUE, sep=",")
+  data$time <- data$time / 1000000 # ns -> ms
+  data$file_size_human <- humanReadable(x=data$file_size, units="auto", standard="IEC", digits=0, width=NULL, sep=" ", justify="right")
+  data$file_size_human <- factor(data$file_size_human, levels = unique(data$file_size_human[order(data$file_size)]))
+  
+  data
+}
+
+current <- load_results(params$current_file)
+
+# If we are in comparision mode
+previous <- if (!is.null(params$previous_file)) { load_results(params$previous_file) }
+has_previous <- !is.null(previous)
 ```
 
 # Overview
 
 ```{r overview}
-data <- read.table(params$current_file, header=TRUE, sep=",")
-data$time <- data$time / 1000000 # ns -> ms
-data$file_size_human <- humanReadable(x=data$file_size, units="auto", standard="IEC", digits=0, width=NULL, sep=" ", justify="right")
 
-current <- data
-current$file_size_human <- factor(current$file_size_human, levels = unique(current$file_size_human[order(current$file_size)]))
+p <- if (has_previous) {
+    ggplot() +
+      geom_violin(data=previous, aes(x=file_size_human, y=time), fill="#B12729", color="#B12729", alpha=0.8) +
+      geom_violin(data=current, aes(x=file_size_human, y=time), fill="#56B4E9", color="#56B4E9", alpha=0.8)
+  } else {
+    ggplot() +
+      geom_violin(data=current, aes(x=file_size_human, y=time), fill="#56B4E9", color="#56B4E9")
+  }
+p <- p +
+    scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) round(x, digits=2))) +
+    theme_ipsum() +
+    theme(legend.position="none") +
+    coord_flip() + # This switch X and Y axis and allows to get the horizontal version
+    ggtitle("Run time PDF per file size") +
+    xlab("File Size") +
+    ylab("Run Time [ms]")
 
-ggplot() +
-#  scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format("log10", math_format(10^.x))) +
-  scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) round(x, digits=2))) +
-  geom_violin(data=current, aes(x=file_size_human, y=time), fill="#56B4E9", color="#56B4E9") +
-  theme_ipsum() +
-  theme(legend.position="none") +
-  coord_flip() + # This switch X and Y axis and allows to get the horizontal version
-  ggtitle("Run time PDF per file size") +
-  xlab("File Size") +
-  ylab("Run Time [ms]")
+p
 ```
+
+This analysis has been run `r Sys.time()`.
+
+Showing benchmark results for "_`r params$current_file`_" with `r nrow(current)` samples.  
+`r if (has_previous) {
+  sprintf("Comparing with results from _%s_ with %d samples.", params$previous_file, nrow(previous))
+}`
+
 
 # Mean Run Time
 
 ```{r meanruntime}
-means <- aggregate(current$time, list(current$file_size), mean)
-colnames(means) <- c("file_size", "mean_time")
-means$file_size_human <- humanReadable(x=means$file_size, units="auto", standard="IEC", digits=0, width=NULL, sep=" ", justify="right")
-means$file_size_human <- factor(means$file_size_human, levels = unique(means$file_size_human[order(means$file_size)]))
+
+mean_results <- function(results) {
+  means <- aggregate(results$time, list(results$file_size), mean)
+  colnames(means) <- c("file_size", "mean_time")
+  means
+}
 
 hr <- function(x) {
   x <- replace(x, is.na(x), 0)
   humanReadable(x, units="auto", standard="IEC", digits=0, width=NULL, sep=" ", justify="right")
 }
 
-p <- ggplot(data=means, aes(x=file_size, y=mean_time)) +
-  scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) hr(x))) +
-  scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) round(x, digits=2))) +
-  geom_segment(
-    aes(xend=c(tail(file_size, n=-1), NA), yend=c(tail(mean_time, n=-1), NA)), color="grey") +
-  geom_point(shape=21, color="black", fill="#56B4E9", size=3) +
-  theme_ipsum() +
-  ggtitle("Mean runtime") +
-  xlab("File Size") +
-  ylab("Mean Run Time [ms]")
-ggplotly(p)
+current_means <- mean_results(current)
+previous_means <- if (has_previous) { mean_results(previous) }
+
+p <- if (has_previous) {
+    ggplot() + 
+      geom_segment(data=previous_means, mapping=aes(x=file_size, y=mean_time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(mean_time, n=-1), NA)), alpha=0.8, color="#B12729") +
+      geom_point(data=previous_means, aes(x=file_size, y=mean_time), shape=21, color="black", fill="#B12729", alpha=0.8, size=3) +
+      geom_segment(data=current_means, mapping=aes(x=file_size, y=mean_time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(mean_time, n=-1), NA)), color="#56B4E9") +
+      geom_point(data=current_means, aes(x=file_size, y=mean_time), shape=21, color="black", fill="#56B4E9", size=3)
+  } else {
+    ggplot() +
+      geom_segment(data=current_means, mapping=aes(x=file_size, y=mean_time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(mean_time, n=-1), NA)), color="#56B4E9") +
+      geom_point(data=current_means, aes(x=file_size, y=mean_time), shape=21, color="black", fill="#56B4E9", size=3)
+  }
+p <- p + 
+    scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) hr(x))) +
+    scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) round(x, digits=2))) +
+    theme_ipsum() +
+    ggtitle("Mean runtime") +
+    xlab("File Size") +
+    ylab("Mean Run Time [ms]")
+
+p
 ```
 
 # Individual File Sizes
@@ -77,8 +120,18 @@ ggplotly(p)
 ```{r individual}
 for (file_size in unique(current$file_size)) {
   current_fs <- current[current$file_size == file_size,]
+  previous_fs <- if (has_previous) { previous[current$file_size == file_size,] } 
   title <- sprintf("Runtime density for file size %s", current_fs$file_size_human[1])
-  p <- ggplot() +
+
+  p <- if (has_previous) {
+    ggplot() +
+      geom_density(data=previous_fs, aes(x=time), fill="#B12729", color="#B12729", alpha=0.8) +
+      geom_vline(data=previous_fs, aes(xintercept=median(time)), color="#B12729", size=1) +
+      geom_vline(data=previous_fs, aes(xintercept=mean(time)), color="#B12729", lty="dashed", size=1)
+  } else {
+    ggplot()
+  }
+  p <- p + 
     geom_density(data=current_fs, aes(x=time), fill="#56B4E9", color="#56B4E9", alpha=0.8) +
     geom_vline(data=current_fs, aes(xintercept=median(time)), color="#56B4E9", size=1) +
     geom_vline(data=current_fs, aes(xintercept=mean(time)), color="#56B4E9", lty="dashed", size=1) +
@@ -86,6 +139,7 @@ for (file_size in unique(current$file_size)) {
     theme_ipsum() +
     xlab("Run Time [ms]") +
     ylab("Density")
+    
   print(p)
 }
 ```
