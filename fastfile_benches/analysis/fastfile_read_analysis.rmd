@@ -15,6 +15,7 @@ options(conflicts.policy = list(error = FALSE, warn = FALSE))
 ```
 
 ```{r}
+source("fastfile.r")
 library(ggplot2)
 library(dplyr)
 library(tidyr)
@@ -26,16 +27,6 @@ library(gdata, include.only=c("humanReadable"))
 ```
 
 ```{r reading_results}
-
-load_results <- function(file) {
-  data <- read.table(file, header=TRUE, sep=",")
-  data$time <- data$time / 1000000 # ns -> ms
-  data$file_size_human <- humanReadable(x=data$file_size, units="auto", standard="IEC", digits=0, width=NULL, sep=" ", justify="right")
-  data$file_size_human <- factor(data$file_size_human, levels = unique(data$file_size_human[order(data$file_size)]))
-  
-  data
-}
-
 current <- load_results(params$current_file)
 
 # If we are in comparision mode
@@ -46,7 +37,6 @@ has_previous <- !is.null(previous)
 # Overview
 
 ```{r overview}
-
 p <- if (has_previous) {
     ggplot() +
       geom_violin(data=previous, aes(x=file_size_human, y=time), fill="#B12729", color="#B12729", alpha=0.8) +
@@ -78,18 +68,6 @@ Showing benchmark results for "_`r params$current_file`_" with `r nrow(current)`
 # Mean Run Time
 
 ```{r meanruntime}
-
-mean_results <- function(results) {
-  means <- aggregate(results$time, list(results$file_size), mean)
-  colnames(means) <- c("file_size", "mean_time")
-  means
-}
-
-hr <- function(x) {
-  x <- replace(x, is.na(x), 0)
-  humanReadable(x, units="auto", standard="IEC", digits=0, width=NULL, sep=" ", justify="right")
-}
-
 current_means <- mean_results(current)
 previous_means <- if (has_previous) { mean_results(previous) }
 
