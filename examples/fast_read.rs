@@ -1,6 +1,3 @@
-// TODO: this is currenly only on nightly
-#![feature(read_initializer)]
-
 use fastfile::prelude::*;
 use std::{
     env,

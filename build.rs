@@ -1,6 +1,4 @@
-#![feature(rustc_private)]
-extern crate libc;
-
+use libc;
 use std::{
     env,
     fs::File,

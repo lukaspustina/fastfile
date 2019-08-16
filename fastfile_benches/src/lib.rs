@@ -1,5 +1,3 @@
-#![feature(read_initializer)]
-
 pub static FILE_SIZES_VERY_SMALL: &[usize] = &[
     1024,
     2 * 1024,

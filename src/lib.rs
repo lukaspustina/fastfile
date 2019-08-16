@@ -4,7 +4,6 @@
 //! `fastfile` uses a heuristic to choose the fastest strategy taking several parameters into
 //! account. For example, the file size, the file system type, and the operating system.
 
-#![feature(read_initializer)]
 #[deny(missing_docs)]
 
 /// Errors
