@@ -7,10 +7,10 @@ load_results <- function(file) {
   data
 }
 
-mean_results <- function(results) {
-  means <- aggregate(results$time, list(results$file_size), mean)
-  colnames(means) <- c("file_size", "mean_time")
-  means
+aggregate_results <- function(results, func) {
+  data <- aggregate(results$time, list(results$file_size), func)
+  colnames(data) <- c("file_size", "time")
+  data
 }
 
 hr <- function(x) {

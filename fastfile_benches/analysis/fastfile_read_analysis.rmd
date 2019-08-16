@@ -3,6 +3,14 @@ title: "FastFile Read Benchmark Analysis"
 output:
   html_document:
     number_sections: TRUE
+    toc: true
+#    toc_float: true
+    toc_depth: 2
+    fig_width: 9
+    fig_height: 7
+    fig_caption: true
+    includes:
+      after_body: footer.html
 params:
   current_file:
   previous_file:
@@ -65,22 +73,22 @@ Showing benchmark results for "_`r params$current_file`_" with `r nrow(current)`
 }`
 
 
-# Mean Run Time
+# Mean and Median Run Time
 
-```{r meanruntime}
-current_means <- mean_results(current)
-previous_means <- if (has_previous) { mean_results(previous) }
+```{r meanruntime, out.width=c('50%', '50%'), fig.show='hold'}
+current_means <- aggregate_results(current, mean)
+previous_means <- if (has_previous) { aggregate_results(previous, mean) }
 
 p <- if (has_previous) {
     ggplot() + 
-      geom_segment(data=previous_means, mapping=aes(x=file_size, y=mean_time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(mean_time, n=-1), NA)), alpha=0.8, color="#B12729") +
-      geom_point(data=previous_means, aes(x=file_size, y=mean_time), shape=21, color="black", fill="#B12729", alpha=0.8, size=3) +
-      geom_segment(data=current_means, mapping=aes(x=file_size, y=mean_time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(mean_time, n=-1), NA)), color="#56B4E9") +
-      geom_point(data=current_means, aes(x=file_size, y=mean_time), shape=21, color="black", fill="#56B4E9", size=3)
+      geom_segment(data=previous_means, mapping=aes(x=file_size, y=time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(time, n=-1), NA)), alpha=0.8, color="#B12729") +
+      geom_point(data=previous_means, aes(x=file_size, y=time), shape=21, color="black", fill="#B12729", alpha=0.8, size=3) +
+      geom_segment(data=current_means, mapping=aes(x=file_size, y=time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(time, n=-1), NA)), color="#56B4E9") +
+      geom_point(data=current_means, aes(x=file_size, y=time), shape=21, color="black", fill="#56B4E9", size=3)
   } else {
     ggplot() +
-      geom_segment(data=current_means, mapping=aes(x=file_size, y=mean_time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(mean_time, n=-1), NA)), color="#56B4E9") +
-      geom_point(data=current_means, aes(x=file_size, y=mean_time), shape=21, color="black", fill="#56B4E9", size=3)
+      geom_segment(data=current_means, mapping=aes(x=file_size, y=time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(time, n=-1), NA)), color="#56B4E9") +
+      geom_point(data=current_means, aes(x=file_size, y=time), shape=21, color="black", fill="#56B4E9", size=3)
   }
 p <- p + 
     scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) hr(x))) +
@@ -89,6 +97,30 @@ p <- p +
     ggtitle("Mean runtime") +
     xlab("File Size") +
     ylab("Mean Run Time [ms]")
+
+p
+
+current_medians <- aggregate_results(current, median)
+previous_medians <- if (has_previous) { aggregate_results(previous, median) }
+
+p <- if (has_previous) {
+    ggplot() + 
+      geom_segment(data=previous_medians, mapping=aes(x=file_size, y=time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(time, n=-1), NA)), alpha=0.8, color="#B12729") +
+      geom_point(data=previous_medians, aes(x=file_size, y=time), shape=21, color="black", fill="#B12729", alpha=0.8, size=3) +
+      geom_segment(data=current_medians, mapping=aes(x=file_size, y=time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(time, n=-1), NA)), color="#56B4E9") +
+      geom_point(data=current_medians, aes(x=file_size, y=time), shape=21, color="black", fill="#56B4E9", size=3)
+  } else {
+    ggplot() +
+      geom_segment(data=current_medians, mapping=aes(x=file_size, y=time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(time, n=-1), NA)), color="#56B4E9") +
+      geom_point(data=current_medians, aes(x=file_size, y=time), shape=21, color="black", fill="#56B4E9", size=3)
+  }
+p <- p + 
+    scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) hr(x))) +
+    scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) round(x, digits=2))) +
+    theme_ipsum() +
+    ggtitle("Median runtime") +
+    xlab("File Size") +
+    ylab("median Run Time [ms]")
 
 p
 ```
@@ -122,22 +154,3 @@ for (file_size in unique(current$file_size)) {
 }
 ```
 
-
-&nbsp;
-<hr />
-<p style="text-align: center;"><a href="https://github.com/lukaspustina/fastfile">FastFile</a> by <a href="https://lukas.pustina.de/">Lukas Pustina</a></p>
-
-<!-- Add icon library -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.9.0/css/fontawesome.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.9.0/css/brands.min.css">
-
-<!-- Add font awesome icons -->
-<p style="text-align: center;">
-    <a href="https://twitter.com/drivebytesting" class="fab fa-twitter"></a>
-    <a href="https://github.com/lukaspustina/" class="fab fa-github"></a>
-    <a href="https://www.linkedin.com/in/lukaspustina" class="fab fa-linkedin"></a>
-    <a href="https://www.xing.com/profile/Lukas_Pustina/" class="fab fa-xing"></a>
-    <a href="https://keybase.io/lukaspustina" class="fab fa-keybase"></a>
-</p>
-
-&nbsp;
