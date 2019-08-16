@@ -18,3 +18,10 @@ hr <- function(x) {
   humanReadable(x, units="auto", standard="IEC", digits=0, width=NULL, sep=" ", justify="right")
 }
 
+plot <- function(title, xlab, ylab) {
+    ggplot() +
+    theme_ipsum() +
+    ggtitle(title) +
+    xlab(xlab) +
+    ylab(ylab)
+}

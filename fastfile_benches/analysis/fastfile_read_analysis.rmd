@@ -20,10 +20,9 @@ params:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 options(conflicts.policy = list(error = FALSE, warn = FALSE))
-```
 
-```{r}
 source("fastfile.r")
+library(knitr)
 library(ggplot2)
 library(dplyr)
 library(tidyr)
@@ -32,6 +31,9 @@ library(hrbrthemes)
 library(viridis)
 library(scales)
 library(gdata, include.only=c("humanReadable"))
+
+current_color <- "#56B4E9"
+previous_color <- "#B12729"
 ```
 
 ```{r reading_results}
@@ -45,24 +47,16 @@ has_previous <- !is.null(previous)
 # Overview
 
 ```{r overview}
-p <- if (has_previous) {
-    ggplot() +
-      geom_violin(data=previous, aes(x=file_size_human, y=time), fill="#B12729", color="#B12729", alpha=0.8) +
-      geom_violin(data=current, aes(x=file_size_human, y=time), fill="#56B4E9", color="#56B4E9", alpha=0.8)
-  } else {
-    ggplot() +
-      geom_violin(data=current, aes(x=file_size_human, y=time), fill="#56B4E9", color="#56B4E9")
-  }
-p <- p +
+p <- plot(title="Run time PDF per file size", xlab="File Size", ylab="Run Time [ms]") +
     scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) round(x, digits=2))) +
-    theme_ipsum() +
-    theme(legend.position="none") +
-    coord_flip() + # This switch X and Y axis and allows to get the horizontal version
-    ggtitle("Run time PDF per file size") +
-    xlab("File Size") +
-    ylab("Run Time [ms]")
+    coord_flip() # This switch X and Y axis and allows to get the horizontal version
+if (has_previous) {
+  p <- p +
+    geom_violin(data=previous, aes(x=file_size_human, y=time), fill=previous_color, color=previous_color, alpha=0.8)
+}
+p +
+  geom_violin(data=current, aes(x=file_size_human, y=time), fill=current_color, color=current_color, alpha=0.8)
 
-p
 ```
 
 This analysis has been run `r Sys.time()`.
@@ -76,81 +70,56 @@ Showing benchmark results for "_`r params$current_file`_" with `r nrow(current)`
 # Mean and Median Run Time
 
 ```{r meanruntime, out.width=c('50%', '50%'), fig.show='hold'}
+# Mean
 current_means <- aggregate_results(current, mean)
 previous_means <- if (has_previous) { aggregate_results(previous, mean) }
 
-p <- if (has_previous) {
-    ggplot() + 
-      geom_segment(data=previous_means, mapping=aes(x=file_size, y=time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(time, n=-1), NA)), alpha=0.8, color="#B12729") +
-      geom_point(data=previous_means, aes(x=file_size, y=time), shape=21, color="black", fill="#B12729", alpha=0.8, size=3) +
-      geom_segment(data=current_means, mapping=aes(x=file_size, y=time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(time, n=-1), NA)), color="#56B4E9") +
-      geom_point(data=current_means, aes(x=file_size, y=time), shape=21, color="black", fill="#56B4E9", size=3)
-  } else {
-    ggplot() +
-      geom_segment(data=current_means, mapping=aes(x=file_size, y=time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(time, n=-1), NA)), color="#56B4E9") +
-      geom_point(data=current_means, aes(x=file_size, y=time), shape=21, color="black", fill="#56B4E9", size=3)
-  }
-p <- p + 
+p <- plot(title="Mean runtime", xlab="File Size", ylab="median Run Time [ms]") +
     scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) hr(x))) +
-    scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) round(x, digits=2))) +
-    theme_ipsum() +
-    ggtitle("Mean runtime") +
-    xlab("File Size") +
-    ylab("Mean Run Time [ms]")
+    scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) round(x, digits=2)))
+if (has_previous) {
+  p <- p + 
+    geom_segment(data=previous_means, mapping=aes(x=file_size, y=time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(time, n=-1), NA)), alpha=0.8, color=previous_color) +
+    geom_point(data=previous_means, aes(x=file_size, y=time), shape=21, color="black", fill=previous_color, alpha=0.8, size=3)
+}
+p +
+  geom_segment(data=current_means, mapping=aes(x=file_size, y=time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(time, n=-1), NA)), color=current_color) +
+  geom_point(data=current_means, aes(x=file_size, y=time), shape=21, color="black", fill=current_color, size=3)
 
-p
-
+# Median
 current_medians <- aggregate_results(current, median)
 previous_medians <- if (has_previous) { aggregate_results(previous, median) }
 
-p <- if (has_previous) {
-    ggplot() + 
-      geom_segment(data=previous_medians, mapping=aes(x=file_size, y=time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(time, n=-1), NA)), alpha=0.8, color="#B12729") +
-      geom_point(data=previous_medians, aes(x=file_size, y=time), shape=21, color="black", fill="#B12729", alpha=0.8, size=3) +
-      geom_segment(data=current_medians, mapping=aes(x=file_size, y=time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(time, n=-1), NA)), color="#56B4E9") +
-      geom_point(data=current_medians, aes(x=file_size, y=time), shape=21, color="black", fill="#56B4E9", size=3)
-  } else {
-    ggplot() +
-      geom_segment(data=current_medians, mapping=aes(x=file_size, y=time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(time, n=-1), NA)), color="#56B4E9") +
-      geom_point(data=current_medians, aes(x=file_size, y=time), shape=21, color="black", fill="#56B4E9", size=3)
-  }
-p <- p + 
+p <- plot(title="Median runtime", xlab="File Size", ylab="median Run Time [ms]") +
     scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) hr(x))) +
-    scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) round(x, digits=2))) +
-    theme_ipsum() +
-    ggtitle("Median runtime") +
-    xlab("File Size") +
-    ylab("median Run Time [ms]")
-
-p
-```
-
-# Individual File Sizes
-
-```{r individual}
-for (file_size in unique(current$file_size)) {
-  current_fs <- current[current$file_size == file_size,]
-  previous_fs <- if (has_previous) { previous[current$file_size == file_size,] } 
-  title <- sprintf("Runtime density for file size %s", current_fs$file_size_human[1])
-
-  p <- if (has_previous) {
-    ggplot() +
-      geom_density(data=previous_fs, aes(x=time), fill="#B12729", color="#B12729", alpha=0.8) +
-      geom_vline(data=previous_fs, aes(xintercept=median(time)), color="#B12729", size=1) +
-      geom_vline(data=previous_fs, aes(xintercept=mean(time)), color="#B12729", lty="dashed", size=1)
-  } else {
-    ggplot()
-  }
+    scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) round(x, digits=2)))
+if (has_previous) {
   p <- p + 
-    geom_density(data=current_fs, aes(x=time), fill="#56B4E9", color="#56B4E9", alpha=0.8) +
-    geom_vline(data=current_fs, aes(xintercept=median(time)), color="#56B4E9", size=1) +
-    geom_vline(data=current_fs, aes(xintercept=mean(time)), color="#56B4E9", lty="dashed", size=1) +
-    ggtitle(title) +
-    theme_ipsum() +
-    xlab("Run Time [ms]") +
-    ylab("Density")
-    
-  print(p)
+    geom_segment(data=previous_medians, mapping=aes(x=file_size, y=time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(time, n=-1), NA)), alpha=0.8, color=previous_color) +
+    geom_point(data=previous_medians, aes(x=file_size, y=time), shape=21, color="black", fill=previous_color, alpha=0.8, size=3)
 }
+p  +
+  geom_segment(data=current_medians, mapping=aes(x=file_size, y=time, xend=c(tail(file_size, n=-1), NA), yend=c(tail(time, n=-1), NA)), color=current_color) +
+  geom_point(data=current_medians, aes(x=file_size, y=time), shape=21, color="black", fill=current_color, size=3)
 ```
 
+# Run Time Density for Individual File Sizes
+
+`r if (has_previous) {
+  sprintf("Comparing with results from _%s_ with %d samples.", params$previous_file, nrow(previous))
+}`
+
+
+```{r individual_computation}
+rmd <- sapply(
+  unique(current$file_size),
+  function(x) {
+    knit_expand(file="individual_density.tmpl.rmd", file_size=x)
+  }
+)
+rmd <- paste(rmd, collapse = "\n")
+```  
+```{r individual_output, results="asis"} 
+rendered <- knit(text=rmd, quiet=TRUE) 
+cat(rendered, sep="\n") 
+``` 
