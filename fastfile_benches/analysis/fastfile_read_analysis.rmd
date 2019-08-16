@@ -14,7 +14,7 @@ params:
   title:
   current_file:
   previous_file:
-  date: !r Sys.Date()
+  individual_plots: TRUE
 title: "`r params$title`"
 ---
 
@@ -104,9 +104,8 @@ p  +
   geom_point(data=current_medians, aes(x=file_size, y=time), shape=21, color="black", fill=current_color, size=3)
 ```
 
-# Run Time for Individual File Sizes
-
-```{r individual_computation}
+`r if (params$individual_plots) { "# Run Time for Individual File Sizes" }`
+```{r individual_computation, eval = params$individual_plots}
 rmd <- sapply(
   unique(current$file_size),
   function(x) {
@@ -115,7 +114,7 @@ rmd <- sapply(
 )
 rmd <- paste(rmd, collapse = "\n")
 ```  
-```{r individual_output, results="asis"} 
+```{r individual_output, results="asis", eval = params$individual_plots} 
 rendered <- knit(text=rmd, quiet=TRUE) 
 cat(rendered, sep="\n") 
 ``` 
