@@ -1,5 +1,4 @@
 ---
-title: "FastFile Read Benchmark Analysis"
 output:
   html_document:
     number_sections: TRUE
@@ -12,9 +11,11 @@ output:
     includes:
       after_body: footer.html
 params:
+  title:
   current_file:
   previous_file:
   date: !r Sys.Date()
+title: "`r params$title`"
 ---
 
 ```{r setup, include=FALSE}

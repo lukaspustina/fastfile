@@ -7,7 +7,8 @@ option_list = list(
     make_option(c("-c", "--current_file"), type="character", default=NULL, help="results file name of current benchmark", metavar="character"),
     make_option(c("-p", "--previous_file"), type="character", default=NULL, help="results file name of previous benchmark to compare with", metavar="character"),
     make_option(c("--out_dir"), type="character", default="../results/current", help="output directory [default=%default]", metavar="character"),
-    make_option(c("-o", "--out_prefix"), type="character", default=NULL, help="output file name prefix", metavar="character")
+    make_option(c("-t", "--title"), type="character", default=NULL, help="title of document [default=current_file filename prefix]", metavar="character"),
+    make_option(c("-o", "--out_prefix"), type="character", default=NULL, help="output file name prefix [default=current_file filename prefix]", metavar="character")
 ); 
 
 opt_parser = OptionParser(option_list=option_list);
@@ -18,9 +19,14 @@ if (is.null(opt$current_file)){
   stop("Results file name must be provided", call=FALSE)
 }
 
+current_file_prefix <- tools::file_path_sans_ext(basename(opt$current_file))
+
+if (is.null(opt$title)){
+  opt$title <- current_file_prefix
+}
+
 if (is.null(opt$out_prefix)){
-  print_help(opt_parser)
-  stop("Output filen name must be provided", call=FALSE)
+  opt$out_prefix <- current_file_prefix
 }
 
 out_file <- sprintf("%s/%s.html", opt$out_dir, opt$out_prefix)
@@ -29,6 +35,7 @@ render("fastfile_read_analysis.rmd",
   output_file = out_file,
   clean = TRUE,
   params = list(
+    title = opt$title,
     current_file = opt$current_file,
     previous_file = opt$previous_file
   )

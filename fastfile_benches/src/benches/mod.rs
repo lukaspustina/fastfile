@@ -1,3 +1,5 @@
+pub mod methods;
+
 use byte_unit::Byte;
 use std::{
     io::{self, Write},
@@ -96,6 +98,14 @@ impl<'a, T> Benchmark<'a, T> {
         println!("\nReceived {} sample(s) (expected {})", res.samples.len(), self.params.len() * self.functions.len() * self.iterations);
 
         res
+    }
+
+    pub fn name(&self) -> &str {
+        self.name
+    }
+
+    pub fn params(&self) -> &[Param<T>] {
+        self.params
     }
 }
 

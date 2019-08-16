@@ -22,7 +22,6 @@ p +
 # Distribution
 title <- sprintf("Run time distribution for file size %s", current_fs$file_size_human[1])
 plot(title=title, xlab="Iterations", ylab="Run Time [ms]") +
-  geom_point(data=current_fs, aes(x=c(1:nrow(current_fs)), y=time), shape=21, color=current_color, fill=current_color, size=2) +
-  geom_smooth(data=current_fs, aes(x=c(1:nrow(current_fs)), y=time), method=glm , color=current_color, fill=current_color, se=TRUE)
+  geom_point(data=current_fs, aes(x=c(1:nrow(current_fs)), y=time), shape=21, color=current_color, fill=current_color, size=2)
 ```
 

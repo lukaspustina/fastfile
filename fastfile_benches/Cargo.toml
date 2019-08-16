@@ -21,9 +21,5 @@ tempfile = "3"
 spectral = "0.6"
 
 [[bench]]
-name = "macos_fastread_cache"
-harness = false
-
-[[bench]]
-name = "macos_fastread_nocache"
+name = "macos-fastread-nocache-very_small"
 harness = false
