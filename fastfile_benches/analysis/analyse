@@ -4,41 +4,41 @@ library("optparse")
 library("rmarkdown")
 
 option_list = list(
-    make_option(c("-c", "--current_file"), type="character", default=NULL, help="results file name of current benchmark", metavar="file"),
-    make_option(c("-p", "--previous_file"), type="character", default=NULL, help="results file name of previous benchmark to compare with", metavar="file"),
-    make_option(c("--out_dir"), type="character", default="../results/current", help="output directory [default=%default]", metavar="path"),
+    make_option(c("-c", "--current-file"), type="character", default=NULL, help="results file name of current benchmark", metavar="file"),
+    make_option(c("-p", "--previous-file"), type="character", default=NULL, help="results file name of previous benchmark to compare with", metavar="file"),
+    make_option(c("--out-dir"), type="character", default="../results/current", help="output directory [default=%default]", metavar="path"),
     make_option(c("-t", "--title"), type="character", default=NULL, help="title of document [default=current_file filename prefix]", metavar="title"),
-    make_option(c("-o", "--out_prefix"), type="character", default=NULL, help="output file name prefix [default=current_file filename prefix]", metavar="prefix"),
+    make_option(c("-o", "--out-prefix"), type="character", default=NULL, help="output file name prefix [default=current_file filename prefix]", metavar="prefix"),
     make_option(c("--no-individual-plots"), action="store_true", default=FALSE, help="turn off individual plots")
 ); 
 
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
-if (is.null(opt$current_file)){
+if (is.null(opt$"current-file")){
   print_help(opt_parser)
   stop("Results file name must be provided", call=FALSE)
 }
 
-current_file_prefix <- tools::file_path_sans_ext(basename(opt$current_file))
+current_file_prefix <- tools::file_path_sans_ext(basename(opt$"current-file"))
 
 if (is.null(opt$title)){
   opt$title <- current_file_prefix
 }
 
-if (is.null(opt$out_prefix)){
-  opt$out_prefix <- current_file_prefix
+if (is.null(opt$"out-prefix")){
+  opt$"out-prefix" <- current_file_prefix
 }
 
-out_file <- sprintf("%s/%s.html", opt$out_dir, opt$out_prefix)
+out_file <- sprintf("%s/%s.html", opt$"out-dir", opt$"out-prefix")
 
 render("fastfile_read_analysis.rmd",
   output_file = out_file,
   clean = TRUE,
   params = list(
     title = opt$title,
-    current_file = opt$current_file,
-    previous_file = opt$previous_file,
+    current_file = opt$"current-file",
+    previous_file = opt$"previous-file",
     individual_plots = !opt$"no-individual-plots"
   )
 )
