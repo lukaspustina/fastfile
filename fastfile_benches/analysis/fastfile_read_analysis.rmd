@@ -103,18 +103,13 @@ p  +
   geom_point(data=current_medians, aes(x=file_size, y=time), shape=21, color="black", fill=current_color, size=3)
 ```
 
-# Run Time Density for Individual File Sizes
-
-`r if (has_previous) {
-  sprintf("Comparing with results from _%s_ with %d samples.", params$previous_file, nrow(previous))
-}`
-
+# Run Time for Individual File Sizes
 
 ```{r individual_computation}
 rmd <- sapply(
   unique(current$file_size),
   function(x) {
-    knit_expand(file="individual_density.tmpl.rmd", file_size=x)
+    knit_expand(file="individual.tmpl.rmd", file_size=x)
   }
 )
 rmd <- paste(rmd, collapse = "\n")
