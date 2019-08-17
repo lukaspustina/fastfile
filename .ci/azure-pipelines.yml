@@ -1,0 +1,69 @@
+trigger:
+  branches:
+    include: ['*']
+  tags:
+    include: ['*']
+
+jobs:
+  - job: 'Clippy'
+    pool:
+      vmImage: 'ubuntu-18.04'
+    container: 'rust:latest'
+    steps:
+      - script: rustup component add clippy
+        displayName: Install clippy
+      - script: cargo clippy --all --all-targets --all-features -- -D warnings $(source ".clippy.args")
+        displayName: Run Clippy
+
+  - job: 'Rustfmt'
+    pool:
+      vmImage: 'ubuntu-18.04'
+    container: 'rustlang/rust:nightly'
+    steps:
+      - script: rustup component add rustfmt
+        displayName: Install Rustfmt
+      - script: cargo fmt --all -- --check
+        displayName: Run fmt
+
+  - job: 'Test'
+    strategy:
+      matrix:
+        windows-stable:
+          imageName: 'vs2017-win2016'
+          rustup_toolchain: stable
+        mac-minimum:
+          imageName: 'macos-10.13'
+          rustup_toolchain: 1.30
+        mac-stable:
+          imageName: 'macos-10.13'
+          rustup_toolchain: stable
+        linux-minimum:
+          imageName: 'ubuntu-18.04'
+          rustup_toolchain: 1.30
+        linux-stable:
+          imageName: 'ubuntu-18.04'
+          rustup_toolchain: stable
+        linux-beta:
+          imageName: 'ubuntu-18.04'
+          rustup_toolchain: beta
+    pool:
+      vmImage: $(imageName)
+    steps:
+      - script: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain $RUSTUP_TOOLCHAIN
+          echo "##vso[task.setvariable variable=PATH;]$PATH:$HOME/.cargo/bin"
+        displayName: Install rust
+        condition: ne( variables['Agent.OS'], 'Windows_NT' )
+      - script: |
+            curl -sSf -o rustup-init.exe https://win.rustup.rs
+            rustup-init.exe -y --default-toolchain %RUSTUP_TOOLCHAIN%
+            echo "##vso[task.setvariable variable=PATH;]%PATH%;%USERPROFILE%\.cargo\bin"
+        displayName: Windows install rust
+        condition: eq( variables['Agent.OS'], 'Windows_NT' )
+      - script: cargo check --all --tests --examples --benches
+        displayName: Cargo check
+      - script: cargo build --all --tests --examples --benches
+        displayName: Cargo build
+      - script: cargo test --all
+        displayName: Cargo test
+
