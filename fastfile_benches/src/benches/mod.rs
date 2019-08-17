@@ -1,14 +1,9 @@
-use crate::benchmark::Param;
-use crate::utils::create_random_test_file;
+use crate::{benchmark::Param, utils::create_random_test_file};
 
 pub mod methods;
 
 use byte_unit::Byte;
-use std::{
-    io,
-    fs,
-    path::PathBuf,
-};
+use std::{fs, io, path::PathBuf};
 
 #[rustfmt::skip]
 pub static FILE_SIZES_VERY_SMALL: &[usize] = &[
@@ -80,4 +75,3 @@ pub fn cleanup(params: Vec<Param<PathBuf>>) -> io::Result<()> {
 
     Ok(())
 }
-

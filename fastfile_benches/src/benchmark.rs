@@ -154,13 +154,16 @@ pub struct NamedFunction<'a, T> {
 #[derive(Debug)]
 pub struct BenchmarkResult<'a> {
     pub benchmark_name: &'a str,
-    pub samples: Vec<Sample<'a>>,
+    pub samples:        Vec<Sample<'a>>,
 }
 
 impl<'a> BenchmarkResult<'a> {
     pub fn new(benchmark_name: &'a str, num: usize) -> BenchmarkResult<'a> {
         let samples = Vec::with_capacity(num);
-        BenchmarkResult { benchmark_name, samples }
+        BenchmarkResult {
+            benchmark_name,
+            samples,
+        }
     }
 
     pub fn write_results<P: AsRef<Path>>(&self, results_dir: P) -> io::Result<()> {
@@ -264,4 +267,3 @@ impl<'a> Display for ThroughputSummary<'a> {
         )
     }
 }
-

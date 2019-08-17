@@ -1,5 +1,5 @@
 use fastfile_benches::{
-    benches::{methods::std::buf_read, prepare, cleanup, FILE_SIZES_VERY_SMALL},
+    benches::{cleanup, methods::std::buf_read, prepare, FILE_SIZES_VERY_SMALL},
     benchmark::Benchmark,
 };
 
@@ -16,7 +16,9 @@ fn main() {
             let _ = buf_read::read(p);
         });
 
-    benchmark.benchmark().write_results("./results/current").expect("Failed to write benchmark results");
+    benchmark
+        .benchmark()
+        .write_results("./results/current")
+        .expect("Failed to write benchmark results");
     cleanup(params).expect("Failed to clean up test files");
 }
-
