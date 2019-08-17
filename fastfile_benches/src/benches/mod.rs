@@ -208,9 +208,9 @@ impl Summary {
 
 impl Display for Summary {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let min = self.min as f64 / 1_000_000 as f64;
-        let mean = self.mean as f64 / 1_000_000 as f64;
-        let max = self.max as f64 / 1_000_000 as f64;
+        let min = self.min as f64 / 1_000_000f64;
+        let mean = self.mean as f64 / 1_000_000f64;
+        let max = self.max as f64 / 1_000_000f64;
         write!(f, "[{:7.2} ms, {:7.2} ms, {:7.2} ms]", min, mean, max)
     }
 }

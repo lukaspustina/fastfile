@@ -38,6 +38,7 @@ fn create_backing_reader(file: File, file_size: u64) -> Result<BackingReader> {
     BackingReader::file(file)
 }
 
+#[allow(clippy::collapsible_if)]
 fn prepare_file_for_reading<T: AsRawFd>(fd: &T, file_size: u64) -> Result<()> {
     let fd = fd.as_raw_fd();
 

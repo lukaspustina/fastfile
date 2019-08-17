@@ -224,10 +224,10 @@ mod tests {
             .is_equal_to(&PAGE_SIZE);
         asserting("size = PAGE_SIZE + 1")
             .that(&optimal_buffer_size(PAGE_SIZE as u64 + 1))
-            .is_equal_to(&2 * PAGE_SIZE);
+            .is_equal_to(2 * PAGE_SIZE);
         asserting("size = 2*PAGE_SIZE + 1")
             .that(&optimal_buffer_size(2 * PAGE_SIZE as u64 + 1))
-            .is_equal_to(&3 * PAGE_SIZE);
+            .is_equal_to(3 * PAGE_SIZE);
     }
 
     #[test]
@@ -356,7 +356,7 @@ mod tests {
     struct TestFileReaderStragegy {}
     impl strategy::ReaderStrategy for TestFileReaderStragegy {
         fn get_reader(&self, ffrb: FastFileReaderBuilder) -> Result<FastFileReader> {
-            let FastFileReaderBuilder { file, size: _ } = ffrb;
+            let FastFileReaderBuilder { file, .. } = ffrb;
             let file = file.unwrap();
             let size = file.metadata().unwrap().len();
             let inner = BackingReader::file(file)?;
@@ -368,7 +368,7 @@ mod tests {
     struct TestMmapReaderStragegy {}
     impl strategy::ReaderStrategy for TestMmapReaderStragegy {
         fn get_reader(&self, ffrb: FastFileReaderBuilder) -> Result<FastFileReader> {
-            let FastFileReaderBuilder { file, size: _ } = ffrb;
+            let FastFileReaderBuilder { file, .. } = ffrb;
             let file = file.unwrap();
             let size = file.metadata().unwrap().len();
             let inner = BackingReader::mmap(file)?;

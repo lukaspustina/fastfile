@@ -36,7 +36,7 @@ fn prepare(file_sizes: &[usize]) -> io::Result<Vec<Param<PathBuf>>> {
     for &size in file_sizes {
         let name = format!("{}", size);
         let bytes = Byte::from_bytes(size as u128);
-        let display_name = format!("{}", bytes.get_appropriate_unit(true).format(0));
+        let display_name = bytes.get_appropriate_unit(true).format(0).to_string();
         let path = create_random_test_file(size)?;
         let p = Param::new(name, display_name, size, path);
         params.push(p);
