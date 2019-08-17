@@ -1,18 +1,9 @@
 use fastfile_benches::{
-    benches::{methods::fastfile::fastread, *},
-    utils::create_random_test_file,
-    FILE_SIZES_VERY_SMALL,
-};
-
-use byte_unit::Byte;
-use std::{
-    fs::{self, File},
-    io,
-    path::{Path, PathBuf},
+    benches::{methods::fastfile::fastread, prepare, cleanup, FILE_SIZES_VERY_SMALL},
+    benchmark::Benchmark,
 };
 
 fn main() {
-    let results_dir = "./results/current";
     let benchmark_name = "FastFile: fastread, NOT cached, very small [1 KiB - 128 KiB]";
     let iterations = 10000;
     let params = prepare(&FILE_SIZES_VERY_SMALL).expect("Failed to create test files");
@@ -25,45 +16,7 @@ fn main() {
             let _ = fastread::read(p);
         });
 
-    let res = benchmark.benchmark();
-    write_results(&res, benchmark_name, results_dir).expect("Failed write results file");
+    benchmark.benchmark().write_results("./results/current").expect("Failed to write benchmark results");
     cleanup(params).expect("Failed to clean up test files");
 }
 
-fn prepare(file_sizes: &[usize]) -> io::Result<Vec<Param<PathBuf>>> {
-    let mut params = Vec::with_capacity(file_sizes.len());
-
-    for &size in file_sizes {
-        let name = format!("{}", size);
-        let bytes = Byte::from_bytes(size as u128);
-        let display_name = bytes.get_appropriate_unit(true).format(0).to_string();
-        let path = create_random_test_file(size)?;
-        let p = Param::new(name, display_name, size, path);
-        params.push(p);
-    }
-
-    Ok(params)
-}
-
-fn write_results<P: AsRef<Path>>(results: &BenchmarkResult, benchmark_name: &str, results_dir: P) -> io::Result<()> {
-    fs::create_dir_all(&results_dir)?;
-    let mut output_path = results_dir.as_ref().join(benchmark_name);
-    output_path.set_extension("csv");
-    println!("Writing benchmark results to \"{}\"", &output_path.to_string_lossy());
-    write_csv(output_path, results)?;
-
-    Ok(())
-}
-
-fn write_csv<P: AsRef<Path>>(path: P, res: &BenchmarkResult) -> io::Result<()> {
-    let mut file = File::create(path)?;
-    res.write_as_csv(&mut file)
-}
-
-fn cleanup(params: Vec<Param<PathBuf>>) -> io::Result<()> {
-    for p in params {
-        fs::remove_file(p.value())?;
-    }
-
-    Ok(())
-}
