@@ -59,7 +59,7 @@ pub mod fastfile {
     }
 }
 
-pub mod stdlib {
+pub mod std {
     pub mod buf_read {
         use std::{
             fs::File,

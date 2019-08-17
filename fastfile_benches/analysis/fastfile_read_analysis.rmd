@@ -41,8 +41,8 @@ previous_color <- "#B12729"
 current <- load_results(params$current_file)
 
 # If we are in comparision mode
-previous <- if (!is.null(params$previous_file)) { load_results(params$previous_file) }
-has_previous <- !is.null(previous)
+has_previous <- !is.null(params$previous_file)
+previous <- if (has_previous) { load_results(params$previous_file) }
 ```
 
 # Overview
