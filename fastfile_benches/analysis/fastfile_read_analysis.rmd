@@ -104,6 +104,25 @@ p  +
   geom_point(data=current_medians, aes(x=file_size, y=time), shape=21, color="black", fill=current_color, size=3)
 ```
 
+`r if (has_previous) { "## Mean and Median Speed Up" }`
+```{r meanspeedup, eval = has_previous, out.width=c('50%', '50%'), fig.show='hold'}
+
+alpha <- 0.05
+
+speedups_stats <- calc_speedups(current, previous)
+ 
+# Mean with Standard Error
+conditional_coloring_plot(title="Mean Speedup with Std Error", xlab="File Size", ylab="Speed Up in %") +
+  scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) hr(x))) +
+  geom_bar(data=speedups_stats, aes(x=file_size, y=mean, fill=mean < 0), stat="identity", alpha=0.8) +
+  geom_errorbar(data=speedups_stats, aes(x=file_size, ymin=mean-sd, ymax=mean+sd, color=mean < 0), width=0.4, alpha=0.9, size=0.5)
+
+# Median
+conditional_coloring_plot(title="Median Speedup", xlab="File Size", ylab="Speed Up in %") +
+  scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) hr(x))) +
+  geom_bar(data=speedups_stats, aes(x=file_size, y=median, fill=median < 0), stat="identity", alpha=0.8)
+```
+
 `r if (params$individual_plots) { "# Run Time for Individual File Sizes" }`
 ```{r individual_computation, eval = params$individual_plots}
 rmd <- sapply(

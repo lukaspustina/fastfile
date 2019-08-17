@@ -13,6 +13,21 @@ aggregate_results <- function(results, func) {
   data
 }
 
+calc_speedups <- function(current, previous) {
+  file_size <- previous$file_size
+  speedup <- (previous$time - current$time) / previous$time * 100
+  data.frame(file_size, speedup) %>%
+    group_by(file_size) %>%
+    summarise( 
+      n=n(),
+      mean=mean(speedup),
+      median=median(speedup),
+      sd=sd(speedup)
+    ) %>%
+    mutate( se=sd/sqrt(n))  %>%
+    mutate( ic=se * qt((1-alpha)/2 + .5, n-1))
+}
+
 hr <- function(x) {
   x <- replace(x, is.na(x), 0)
   humanReadable(x, units="auto", standard="IEC", digits=0, width=NULL, sep=" ", justify="right")
@@ -24,4 +39,11 @@ plot <- function(title, xlab, ylab) {
     ggtitle(title) +
     xlab(xlab) +
     ylab(ylab)
+}
+
+conditional_coloring_plot <- function(title, xlab, ylab) {
+  plot(title, xlab, ylab) +
+    scale_fill_manual(guide = FALSE, breaks = c(TRUE, FALSE), values=c(current_color, previous_color)) +
+    scale_color_manual(guide = FALSE, breaks = c(TRUE, FALSE), values=c(current_color, previous_color)) +
+    theme(legend.position="none")
 }
