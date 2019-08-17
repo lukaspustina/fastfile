@@ -1,12 +1,13 @@
-use fastfile_benches::FILE_SIZES_VERY_SMALL;
-use fastfile_benches::benches::*;
-use fastfile_benches::benches::methods::fastfile::fastread;
-use fastfile_benches::utils::create_random_test_file;
+use fastfile_benches::{
+    benches::{methods::fastfile::fastread, *},
+    utils::create_random_test_file,
+    FILE_SIZES_VERY_SMALL,
+};
 
 use byte_unit::Byte;
 use std::{
-    io,
     fs::{self, File},
+    io,
     path::{Path, PathBuf},
 };
 
@@ -17,8 +18,12 @@ fn main() {
     let params = prepare(&FILE_SIZES_VERY_SMALL).expect("Failed to create test files");
 
     let benchmark = Benchmark::new(benchmark_name, &params, iterations)
-        .setup(|p| { let _ = fastfile_benches::io::purge_cache(p); })
-        .add_func("fastread", |p| { let _ = fastread::read(p); });
+        .setup(|p| {
+            let _ = fastfile_benches::io::purge_cache(p);
+        })
+        .add_func("fastread", |p| {
+            let _ = fastread::read(p);
+        });
 
     let res = benchmark.benchmark();
     write_results(&res, benchmark_name, results_dir).expect("Failed write results file");
@@ -31,7 +36,7 @@ fn prepare(file_sizes: &[usize]) -> io::Result<Vec<Param<PathBuf>>> {
     for &size in file_sizes {
         let name = format!("{}", size);
         let bytes = Byte::from_bytes(size as u128);
-        let display_name= format!("{}", bytes.get_appropriate_unit(true).format(0));
+        let display_name = format!("{}", bytes.get_appropriate_unit(true).format(0));
         let path = create_random_test_file(size)?;
         let p = Param::new(name, display_name, size, path);
         params.push(p);
@@ -52,7 +57,7 @@ fn write_results<P: AsRef<Path>>(results: &BenchmarkResult, benchmark_name: &str
 
 fn write_csv<P: AsRef<Path>>(path: P, res: &BenchmarkResult) -> io::Result<()> {
     let mut file = File::create(path)?;
-    res.write_as_csv(&mut file) 
+    res.write_as_csv(&mut file)
 }
 
 fn cleanup(params: Vec<Param<PathBuf>>) -> io::Result<()> {
@@ -62,4 +67,3 @@ fn cleanup(params: Vec<Param<PathBuf>>) -> io::Result<()> {
 
     Ok(())
 }
-

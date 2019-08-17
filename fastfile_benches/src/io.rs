@@ -1,10 +1,5 @@
 use libc;
-use std::{
-    fs::File,
-    io::self,
-    os::unix::io::AsRawFd,
-    path::Path,
-};
+use std::{fs::File, io, os::unix::io::AsRawFd, path::Path};
 
 pub fn purge_cache<T: AsRef<Path>>(path: T) -> io::Result<()> {
     let file = File::open(path)?;

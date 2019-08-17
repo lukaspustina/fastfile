@@ -22,6 +22,4 @@ fn generate_os_consts_file<T: AsRef<Path>>(output_path: T) -> io::Result<()> {
     Ok(())
 }
 
-fn get_system_page_size() -> ::libc::c_long {
-    unsafe { ::libc::sysconf(libc::_SC_PAGESIZE) }
-}
+fn get_system_page_size() -> ::libc::c_long { unsafe { ::libc::sysconf(libc::_SC_PAGESIZE) } }

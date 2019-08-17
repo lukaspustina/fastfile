@@ -13,21 +13,15 @@ include!(concat!(env!("OUT_DIR"), "/os_consts.rs"));
 
 #[allow(dead_code)]
 pub struct PageCacheInfo {
-    total: usize,
+    total:  usize,
     cached: usize,
 }
 
 #[allow(dead_code)]
 impl PageCacheInfo {
-    pub fn total(&self) -> usize {
-        self.total
-    }
+    pub fn total(&self) -> usize { self.total }
 
-    pub fn cached(&self) -> usize {
-        self.cached
-    }
+    pub fn cached(&self) -> usize { self.cached }
 
-    pub fn ratio(&self) -> f32 {
-        self.cached as f32 / self.total as f32
-    }
+    pub fn ratio(&self) -> f32 { self.cached as f32 / self.total as f32 }
 }

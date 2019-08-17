@@ -17,10 +17,7 @@ pub fn create_random_test_file(size: usize) -> io::Result<PathBuf> {
     {
         let file = File::open(&path)?;
         let file_size = file.metadata()?.len();
-        assert_eq!(
-            file_size, size as u64,
-            "Failed to fill file with random data"
-        );
+        assert_eq!(file_size, size as u64, "Failed to fill file with random data");
     }
 
     Ok(path)
@@ -33,8 +30,7 @@ pub fn fill_file<P: AsRef<Path>>(path: P, size: usize) -> io::Result<usize> {
     let mut rng = SmallRng::from_entropy();
 
     let mut buf = [0u8; PAGE_SIZE];
-    rng.try_fill(&mut buf[..])
-        .expect("failed to generate rnd buf");
+    rng.try_fill(&mut buf[..]).expect("failed to generate rnd buf");
 
     for _ in 0..(size / PAGE_SIZE) {
         file.write_all(&buf)?;

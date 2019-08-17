@@ -2,9 +2,7 @@ use fastfile::{prelude::*, FastFileRead};
 use std::env;
 
 fn main() {
-    let path = env::args()
-        .nth(1)
-        .unwrap_or_else(|| "Cargo.toml".to_string());
+    let path = env::args().nth(1).unwrap_or_else(|| "Cargo.toml".to_string());
 
     let mut ffr = FastFile::read(&path)
         .expect("Failed to create FastFileReaderBuilder")

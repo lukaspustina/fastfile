@@ -47,12 +47,7 @@ pub struct FastFileReaderBuilder {
 }
 
 impl Default for FastFileReaderBuilder {
-    fn default() -> Self {
-        FastFileReaderBuilder {
-            file: None,
-            size: None,
-        }
-    }
+    fn default() -> Self { FastFileReaderBuilder { file: None, size: None } }
 }
 
 impl FastFileReaderBuilder {
@@ -63,10 +58,7 @@ impl FastFileReaderBuilder {
         }
     }
 
-    pub fn open_with_strategy<T: strategy::ReaderStrategy>(
-        self,
-        reader_strategy: &T,
-    ) -> Result<FastFileReader> {
+    pub fn open_with_strategy<T: strategy::ReaderStrategy>(self, reader_strategy: &T) -> Result<FastFileReader> {
         reader_strategy.get_reader(self)
     }
 
@@ -83,9 +75,7 @@ pub enum BackingReader {
 }
 
 impl BackingReader {
-    pub fn file(file: File) -> Result<BackingReader> {
-        Ok(BackingReader::File(file))
-    }
+    pub fn file(file: File) -> Result<BackingReader> { Ok(BackingReader::File(file)) }
 
     pub fn mmap(file: File) -> Result<BackingReader> {
         let mmap = unsafe { Mmap::map(&file).map_err(|e| e.context(ErrorKind::FileOpFailed))? };
@@ -104,8 +94,8 @@ impl io::Read for BackingReader {
 
 /// `FastFileReader` is a readable (`std::io::Read`) FastFile
 pub struct FastFileReader {
-    inner: BackingReader,
-    size: u64,
+    inner:  BackingReader,
+    size:   u64,
     buffer: Option<Vec<u8>>,
 }
 
@@ -118,9 +108,7 @@ impl FastFileReader {
         }
     }
 
-    pub fn size(&self) -> u64 {
-        self.size
-    }
+    pub fn size(&self) -> u64 { self.size }
 
     fn init_buffer(&mut self) {
         let buf_size = optimal_buffer_size(self.size);
@@ -128,12 +116,10 @@ impl FastFileReader {
         unsafe {
             vec.set_len(buf_size);
         }
-        /*
-        let buf = vec.as_mut_slice();
-        unsafe {
-            self.inner.initializer().initialize(&mut *buf);
-        }
-        */
+        // let buf = vec.as_mut_slice();
+        // unsafe {
+        // self.inner.initializer().initialize(&mut *buf);
+        // }
         self.buffer = Some(vec);
     }
 }
@@ -189,16 +175,22 @@ impl FastFileRead for FastFileReader {
 }
 
 impl io::Read for FastFileReader {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.inner.read(buf)
-    }
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> { self.inner.read(buf) }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        optimal_buffer_size, os::PAGE_SIZE, strategy, BackingReader, FastFile, FastFileReader,
-        FastFileReaderBuilder, Result, MAX_READ_BUF_SIZE, MIN_READ_BUF_SIZE,
+        optimal_buffer_size,
+        os::PAGE_SIZE,
+        strategy,
+        BackingReader,
+        FastFile,
+        FastFileReader,
+        FastFileReaderBuilder,
+        Result,
+        MAX_READ_BUF_SIZE,
+        MIN_READ_BUF_SIZE,
     };
 
     use rand::{rngs::SmallRng, Rng, SeedableRng};
@@ -342,8 +334,7 @@ mod tests {
         let mut rng = SmallRng::from_entropy();
         let size = rng.gen_range(1024 * 1024 + 1, 2 * 1024 * 1024);
 
-        let path = fastfile_benches::utils::create_random_test_file(size)
-            .expect("Failed to create test file");
+        let path = fastfile_benches::utils::create_random_test_file(size).expect("Failed to create test file");
         let mut ffr = FastFile::read(&path)
             .expect("Failed to create FastFileReaderBuilder")
             .open_with_strategy(reader_strategy)
@@ -353,8 +344,8 @@ mod tests {
 
         assert_eq!(len, ffr.size(), "Read bytes differ from file size");
 
-        let expected_digest = fastfile_benches::utils::get_digest_for_path(&path)
-            .expect("Failed to compute expected digest");
+        let expected_digest =
+            fastfile_benches::utils::get_digest_for_path(&path).expect("Failed to compute expected digest");
         assert_eq!(
             digest.as_ref(),
             expected_digest.as_ref(),

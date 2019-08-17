@@ -1,3 +1,4 @@
+#[rustfmt::skip]
 pub static FILE_SIZES_VERY_SMALL: &[usize] = &[
     1024,
     2 * 1024,
@@ -8,6 +9,7 @@ pub static FILE_SIZES_VERY_SMALL: &[usize] = &[
     128 * 1024,
 ];
 
+#[rustfmt::skip]
 pub static FILE_SIZES_SMALL: &[usize] = &[
     1024,
     2 * 1024,
@@ -22,6 +24,7 @@ pub static FILE_SIZES_SMALL: &[usize] = &[
     2 * 1024 * 1024,
 ];
 
+#[rustfmt::skip]
 pub static FILE_SIZES_MEDIUM: &[usize] = &[
     2 * 1024 * 1024,
     8 * 1024 * 1024,
@@ -36,6 +39,7 @@ pub static FILE_SIZES_MEDIUM: &[usize] = &[
     256 * 1024 * 1024,
 ];
 
+#[rustfmt::skip]
 pub static FILE_SIZES_LARGE: &[usize] = &[
     256 * 1024 * 1024,
     512 * 1024 * 1024,

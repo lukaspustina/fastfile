@@ -25,9 +25,7 @@ fn get_file_size(ffrb: &FastFileReaderBuilder) -> Result<u64> {
     let size = if let Some(size) = ffrb.size {
         size
     } else {
-        let meta = file
-            .metadata()
-            .map_err(|e| e.context(ErrorKind::FileOpFailed))?;
+        let meta = file.metadata().map_err(|e| e.context(ErrorKind::FileOpFailed))?;
         meta.len()
     };
 

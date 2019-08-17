@@ -13,7 +13,7 @@ pub fn read_advise(fd: RawFd, file_size: u64) -> Result<()> {
 
     let ra = libc::radvisory {
         ra_offset: 0 as libc::off_t,
-        ra_count: count,
+        ra_count:  count,
     };
     let res = unsafe { libc::fcntl(fd, libc::F_RDADVISE, &ra) };
     if res < 0 {
@@ -70,16 +70,14 @@ pub fn get_page_cache_info(fd: RawFd, file_size: u64) -> Result<PageCacheInfo> {
     let num_cached_pages = pages_array.iter().map(|x| (x & 0x1) as usize).sum();
 
     let pci = PageCacheInfo {
-        total: num_pages,
+        total:  num_pages,
         cached: num_cached_pages,
     };
 
     Ok(pci)
 }
 
-fn bytes_in_pages(bytes: u64) -> usize {
-    ((bytes + PAGE_SIZE as u64 - 1) / PAGE_SIZE as u64) as usize
-}
+fn bytes_in_pages(bytes: u64) -> usize { ((bytes + PAGE_SIZE as u64 - 1) / PAGE_SIZE as u64) as usize }
 
 #[cfg(test)]
 mod tests {
@@ -92,10 +90,7 @@ mod tests {
     #[test]
     fn test_read_advise() {
         let f = get_file();
-        let file_size = f
-            .metadata()
-            .expect("Could not get metadata of test file")
-            .len();
+        let file_size = f.metadata().expect("Could not get metadata of test file").len();
 
         let res = read_advise(f.as_raw_fd(), file_size);
         asserting("Read advise").that(&res).is_ok();
@@ -113,30 +108,17 @@ mod tests {
     #[test]
     fn test_get_page_cache_info() {
         let f = get_file();
-        let file_size = f
-            .metadata()
-            .expect("Could not get metadata of test file")
-            .len();
+        let file_size = f.metadata().expect("Could not get metadata of test file").len();
 
         let res = get_page_cache_info(f.as_raw_fd(), file_size);
-        asserting("Get page cache information")
-            .that(&res.is_ok())
-            .is_true();
+        asserting("Get page cache information").that(&res.is_ok()).is_true();
 
         let pci = res.unwrap();
-        asserting("Number of pages")
-            .that(&pci.total())
-            .is_equal_to(&1);
+        asserting("Number of pages").that(&pci.total()).is_equal_to(&1);
         // Cargo.toml is always cached due to `cargo test` obviously reads it.
-        asserting("Number of cached pages")
-            .that(&pci.cached())
-            .is_equal_to(&1);
-        asserting("Cached ratio")
-            .that(&pci.ratio())
-            .is_equal_to(&1f32);
+        asserting("Number of cached pages").that(&pci.cached()).is_equal_to(&1);
+        asserting("Cached ratio").that(&pci.ratio()).is_equal_to(&1f32);
     }
 
-    fn get_file() -> File {
-        File::open("Cargo.toml").expect("Could not open test file")
-    }
+    fn get_file() -> File { File::open("Cargo.toml").expect("Could not open test file") }
 }
