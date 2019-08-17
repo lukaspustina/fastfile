@@ -8,15 +8,15 @@ jobs:
   - job: 'Clippy'
     strategy:
       matrix:
-        windows-stable:
-          imageName: 'vs2017-win2016'
-          rustup_toolchain: stable
+        #        windows-stable:
+        #          imageName: 'vs2017-win2016'
+        #          rustup_toolchain: stable
         mac-stable:
           imageName: 'macos-10.13'
           rustup_toolchain: stable
-        linux-stable:
-          imageName: 'ubuntu-16.04'
-          rustup_toolchain: stable
+          #        linux-stable:
+          #          imageName: 'ubuntu-16.04'
+          #          rustup_toolchain: stable
     pool:
       vmImage: $(imageName)
     steps:
@@ -49,24 +49,24 @@ jobs:
   - job: 'Test'
     strategy:
       matrix:
-        windows-stable:
-          imageName: 'vs2017-win2016'
-          rustup_toolchain: stable
+        #        windows-stable:
+        #          imageName: 'vs2017-win2016'
+        #          rustup_toolchain: stable
         mac-minimum:
           imageName: 'macos-10.13'
           rustup_toolchain: 1.32.0
         mac-stable:
           imageName: 'macos-10.13'
           rustup_toolchain: stable
-        linux-minimum:
-          imageName: 'ubuntu-16.04'
-          rustup_toolchain: 1.32.0
-        linux-stable:
-          imageName: 'ubuntu-16.04'
-          rustup_toolchain: stable
-        linux-beta:
-          imageName: 'ubuntu-16.04'
-          rustup_toolchain: beta
+          #        linux-minimum:
+          #          imageName: 'ubuntu-16.04'
+          #          rustup_toolchain: 1.32.0
+          #        linux-stable:
+          #          imageName: 'ubuntu-16.04'
+          #          rustup_toolchain: stable
+          #        linux-beta:
+          #          imageName: 'ubuntu-16.04'
+          #          rustup_toolchain: beta
     pool:
       vmImage: $(imageName)
     steps:
