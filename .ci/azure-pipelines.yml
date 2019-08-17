@@ -7,7 +7,7 @@ trigger:
 jobs:
   - job: 'Clippy'
     pool:
-      vmImage: 'ubuntu-18.04'
+      vmImage: 'ubuntu-16.04'
     container: 'rust:latest'
     steps:
       - script: rustup component add clippy
@@ -17,7 +17,7 @@ jobs:
 
   - job: 'Rustfmt'
     pool:
-      vmImage: 'ubuntu-18.04'
+      vmImage: 'ubuntu-16.04'
     container: 'rustlang/rust:nightly'
     steps:
       - script: rustup component add rustfmt
@@ -38,13 +38,13 @@ jobs:
           imageName: 'macos-10.13'
           rustup_toolchain: stable
         linux-minimum:
-          imageName: 'ubuntu-18.04'
+          imageName: 'ubuntu-16.04'
           rustup_toolchain: 1.30
         linux-stable:
-          imageName: 'ubuntu-18.04'
+          imageName: 'ubuntu-16.04'
           rustup_toolchain: stable
         linux-beta:
-          imageName: 'ubuntu-18.04'
+          imageName: 'ubuntu-16.04'
           rustup_toolchain: beta
     pool:
       vmImage: $(imageName)
