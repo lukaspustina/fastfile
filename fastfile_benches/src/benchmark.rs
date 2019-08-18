@@ -221,38 +221,36 @@ pub trait Summarize {
 
 #[derive(Debug)]
 pub struct Summary {
-    pub min:  u128,
-    pub max:  u128,
-    pub mean: u128,
+    pub min:  f64,
+    pub max:  f64,
+    pub mean: f64,
+    pub sd: f64,
 }
 
 impl Summary {
-    pub fn new(min: u128, max: u128, mean: u128) -> Summary { Summary { min, max, mean } }
+    pub fn new(min: f64, max: f64, mean: f64, sd: f64) -> Summary { Summary { min, max, mean, sd } }
 }
 
 impl Display for Summary {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let min = self.min as f64 / 1_000_000f64;
-        let mean = self.mean as f64 / 1_000_000f64;
-        let max = self.max as f64 / 1_000_000f64;
-        write!(f, "[{:7.2} ms, {:7.2} ms, {:7.2} ms]", min, mean, max)
+        let min = self.min / 1_000_000f64;  // run time in millisecounds
+        let mean = self.mean / 1_000_000f64;
+        let max = self.max / 1_000_000f64;
+        let sd = self.sd / 1_000_000f64;
+        write!(f, "[min:{:10.2} ms, mean:{:10.2} ms, max:{:10.2} ms, sd:{:10.2}]", min, mean, max, sd)
     }
 }
 
 impl<O: WriteAsCSV> Summarize for Vec<Sample<'_, O>> {
     fn summary(&self) -> Summary {
-        let mut min = u128::max_value();
-        let mut max = u128::min_value();
-        let mut sum = 0;
+        use statrs::statistics::Statistics;
 
-        for s in self.iter() {
-            sum += s.time_ns;
-            min = min.min(s.time_ns);
-            max = max.max(s.time_ns);
-        }
-        let mean = sum / self.len() as u128;
-
-        Summary::new(min, max, mean)
+        let values: Vec<f64> = self.iter().map(|x| x.time_ns as f64).collect();
+        let min: f64 = values.as_slice().min();
+        let max: f64 = values.as_slice().max();
+        let mean: f64 = values.as_slice().mean();
+        let sd: f64 = values.as_slice().std_dev();
+        Summary::new(min, max, mean, sd)
     }
 }
 
@@ -268,16 +266,16 @@ impl<'a> ThroughputSummary<'a> {
 
 impl<'a> Display for ThroughputSummary<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let min = self.amount as f64 / (self.summary.min as f64 / 1_000_000_000f64); // run time in secounds
-        let mean = self.amount as f64 / (self.summary.mean as f64 / 1_000_000_000f64);
-        let max = self.amount as f64 / (self.summary.max as f64 / 1_000_000_000f64);
+        let min = self.amount as f64 / (self.summary.min / 1_000_000_000f64); // run time in secounds
+        let mean = self.amount as f64 / (self.summary.mean / 1_000_000_000f64);
+        let max = self.amount as f64 / (self.summary.max / 1_000_000_000f64);
 
         let bytes_min = Byte::from_bytes(min as u128);
         let bytes_mean = Byte::from_bytes(mean as u128);
         let bytes_max = Byte::from_bytes(max as u128);
         write!(
             f,
-            "[{}/s, {}/s, {}/s]",
+            "[min:{:>11}/s, mean:{:>11}/s, max:{:>11}/s]",
             bytes_min.get_appropriate_unit(true).format(2),
             bytes_mean.get_appropriate_unit(true).format(2),
             bytes_max.get_appropriate_unit(true).format(2)
