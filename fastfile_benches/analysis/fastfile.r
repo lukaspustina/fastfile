@@ -18,13 +18,13 @@ calc_speedups <- function(current, previous) {
   speedup <- (previous$time - current$time) / previous$time * 100
   data.frame(file_size, speedup) %>%
     group_by(file_size) %>%
-    summarise( 
+    summarise(
       n=n(),
       mean=mean(speedup),
       median=median(speedup),
       sd=sd(speedup)
     ) %>%
-    mutate( se=sd/sqrt(n))  %>%
+    mutate( se=sd / sqrt(n)) %>%
     mutate( ic=se * qt((1-alpha)/2 + .5, n-1))
 }
 
@@ -46,4 +46,16 @@ conditional_coloring_plot <- function(title, xlab, ylab) {
     scale_fill_manual(guide = FALSE, breaks = c(TRUE, FALSE), values=c(current_color, previous_color)) +
     scale_color_manual(guide = FALSE, breaks = c(TRUE, FALSE), values=c(current_color, previous_color)) +
     theme(legend.position="none")
+}
+
+filter_outliers <- function(results, k) {
+  s <- results %>%
+    group_by(file_size) %>%
+    summarise(
+      p25=quantile(time)[2],
+      p75=quantile(time)[4],
+      iqr=IQR(time)
+    )
+
+  results %>% left_join(s, by = "file_size") %>% filter( !(time < p25 - (iqr * k) | time > p75 + (iqr * k)) ) 
 }

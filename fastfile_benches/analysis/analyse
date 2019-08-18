@@ -9,7 +9,8 @@ option_list = list(
     make_option(c("--out-dir"), type="character", default="../results/current", help="output directory [default=%default]", metavar="path"),
     make_option(c("-t", "--title"), type="character", default=NULL, help="title of document [default=current_file filename prefix]", metavar="title"),
     make_option(c("-o", "--out-prefix"), type="character", default=NULL, help="output file name prefix [default=current_file filename prefix]", metavar="prefix"),
-    make_option(c("--no-individual-plots"), action="store_true", default=FALSE, help="turn off individual plots")
+    make_option(c("--no-individual-plots"), action="store_true", default=FALSE, help="turn off individual plots"),
+    make_option(c("-i", "--iqr"), action="store_true", default=FALSE, help="filter outliers based on IQR")
 ); 
 
 opt_parser = OptionParser(option_list=option_list);
@@ -39,7 +40,8 @@ render("fastfile_read_analysis.rmd",
     title = opt$title,
     current_file = opt$"current-file",
     previous_file = opt$"previous-file",
-    individual_plots = !opt$"no-individual-plots"
+    individual_plots = !opt$"no-individual-plots",
+    filter_outliers = opt$iqr
   )
 )
 

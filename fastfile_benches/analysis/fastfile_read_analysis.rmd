@@ -15,6 +15,7 @@ params:
   current_file:
   previous_file:
   individual_plots: TRUE
+  filter_outliers: FALSE
 title: "`r params$title`"
 ---
 
@@ -35,14 +36,27 @@ library(gdata, include.only=c("humanReadable"))
 
 current_color <- "#56B4E9"
 previous_color <- "#B12729"
+
+has_previous <- !is.null(params$previous_file)
+is_filter_outliers <- params$filter_outliers
 ```
 
 ```{r reading_results}
 current <- load_results(params$current_file)
+if (is_filter_outliers) {
+  filtered <- filter_outliers(current, 3)
+  current_filtered <- nrow(current) - nrow(filtered)
+  current <- filtered
+}
 
 # If we are in comparision mode
-has_previous <- !is.null(params$previous_file)
 previous <- if (has_previous) { load_results(params$previous_file) }
+if (has_previous && is_filter_outliers) {
+  filtered <- filter_outliers(previous, 3)
+  previous_filtered <- nrow(previous) - nrow(filtered)
+  previous <- filtered
+}
+
 ```
 
 # Overview
@@ -62,9 +76,13 @@ p +
 
 This analysis has been run `r Sys.time()`.
 
-Showing benchmark results for "_`r params$current_file`_" with `r nrow(current)` samples.  
+Showing benchmark results for "_`r params$current_file`_" with `r if (is_filter_outliers) { sprintf("%d (%d filtered)", nrow(current), current_filtered) } else { sprintf("%d", nrow(current)) }` samples.  
 `r if (has_previous) {
-  sprintf("Comparing with results from _%s_ with %d samples.", params$previous_file, nrow(previous))
+  if (is_filter_outliers) {
+    sprintf("Comparing with results from _%s_ with %d (%d filtered) samples.", params$previous_file, nrow(previous), previous_filtered)
+  } else {
+    sprintf("Comparing with results from _%s_ with %d samples.", params$previous_file, nrow(previous))
+  }
 }`
 
 
