@@ -32,8 +32,9 @@ impl FastFile {
     pub fn read<P: AsRef<Path>>(path: P) -> Result<FastFileReaderBuilder> {
         let file = File::open(path).map_err(|e| e.context(ErrorKind::FileOpFailed))?;
         let ff = FastFileReaderBuilder {
-            file: Some(file),
-            ..Default::default()
+            file,
+            size: None,
+            size_hint: None,
         };
 
         Ok(ff)
@@ -42,18 +43,22 @@ impl FastFile {
 
 /// `FastFileReaderBuilder` is a builder for a FastFileReader
 pub struct FastFileReaderBuilder {
-    pub file: Option<File>,
+    pub file: File,
     pub size: Option<u64>,
-}
-
-impl Default for FastFileReaderBuilder {
-    fn default() -> Self { FastFileReaderBuilder { file: None, size: None } }
+    pub size_hint: Option<u64>,
 }
 
 impl FastFileReaderBuilder {
-    pub fn set_size(self, size: u64) -> Self {
+    pub fn with_size(self, size: u64) -> Self {
         FastFileReaderBuilder {
             size: Some(size),
+            ..self
+        }
+    }
+
+    pub fn with_size_hint(self, size_hint: u64) -> Self {
+        FastFileReaderBuilder {
+            size_hint: Some(size_hint),
             ..self
         }
     }
@@ -357,7 +362,6 @@ mod tests {
     impl strategy::ReaderStrategy for TestFileReaderStragegy {
         fn get_reader(&self, ffrb: FastFileReaderBuilder) -> Result<FastFileReader> {
             let FastFileReaderBuilder { file, .. } = ffrb;
-            let file = file.unwrap();
             let size = file.metadata().unwrap().len();
             let inner = BackingReader::file(file)?;
 
@@ -369,7 +373,6 @@ mod tests {
     impl strategy::ReaderStrategy for TestMmapReaderStragegy {
         fn get_reader(&self, ffrb: FastFileReaderBuilder) -> Result<FastFileReader> {
             let FastFileReaderBuilder { file, .. } = ffrb;
-            let file = file.unwrap();
             let size = file.metadata().unwrap().len();
             let inner = BackingReader::mmap(file)?;
 

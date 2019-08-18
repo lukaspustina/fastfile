@@ -7,6 +7,10 @@ use std::{fs, io, path::PathBuf};
 
 #[rustfmt::skip]
 pub static FILE_SIZES_VERY_SMALL: &[usize] = &[
+    64,
+    128,
+    256,
+    512,
     1024,
     2 * 1024,
     4 * 1024,

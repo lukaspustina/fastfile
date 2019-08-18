@@ -1,10 +1,10 @@
 use fastfile_benches::{
-    benches::{cleanup, methods::std::buf_read::read, prepare, FILE_SIZES_VERY_SMALL},
+    benches::{cleanup, methods::fastfile::fastread::read, prepare, FILE_SIZES_VERY_SMALL},
     benchmark::Benchmark,
 };
 
 fn main() {
-    let benchmark_name = "Std: buf_read, NOT cached, very small [1 KiB - 128 KiB]";
+    let benchmark_name = "FastFile: fastread, NOT cached, very small [1 KiB - 128 KiB]";
     let iterations = 10000;
     let params = prepare(&FILE_SIZES_VERY_SMALL).expect("Failed to create test files");
 
@@ -12,7 +12,7 @@ fn main() {
         .setup(|p| {
             let _ = fastfile_benches::io::purge_cache(p);
         })
-        .add_func("fastread", |p| read(p));
+        .add_func("fastread", |p| read(p, Some(*FILE_SIZES_VERY_SMALL.last().unwrap() as u64))); // Safe, because slice is not empty
 
     benchmark
         .benchmark()

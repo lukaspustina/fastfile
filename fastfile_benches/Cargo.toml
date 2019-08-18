@@ -25,5 +25,9 @@ name = "macos-std_buf_read-nocache-very_small"
 harness = false
 
 [[bench]]
-name = "macos-fastread-nocache-very_small"
+name = "macos-fastfile_fastread-nocache-very_small"
+harness = false
+
+[[bench]]
+name = "macos-fastfile_read-nocache-very_small"
 harness = false

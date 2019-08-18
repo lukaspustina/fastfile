@@ -9,15 +9,16 @@ fn main() {
         .open()
         .expect("Failed to open path as FastFile");
 
-    let mut len = 0u64;
+    let mut bytes_read = 0u64;
+    let mut sum = 0u64;
     loop {
         let buf = ffr.read().expect("Failed to fastread file");
         if buf.is_empty() {
             break;
         };
-        len += buf.len() as u64;
+        bytes_read += buf.len() as u64;
+        sum += buf.iter().map(|x| u64::from(*x)).sum::<u64>();
     }
-
-    assert_eq!(len, ffr.size(), "Read bytes differ from file size");
-    println!("Bytes read: {}, expected: {}", len, ffr.size());
+    assert_eq!(bytes_read, ffr.size(), "Read bytes differ from file size");
+    println!("Bytes read: {}, expected: {}, sum: {}", bytes_read, ffr.size(), sum);
 }

@@ -17,12 +17,20 @@ pub mod fastfile {
         use fastfile::{prelude::*, FastFileRead};
         use std::{io, path::Path};
 
-        pub fn read<P: AsRef<Path>>(path: P) -> io::Result<(u64, u64, u64)> {
+        pub fn read<P: AsRef<Path>>(path: P, size_hint: Option<u64>) -> io::Result<(u64, u64, u64)> {
             let path = path.as_ref();
-            let mut ffr = FastFile::read(path)
-                .expect("Failed to create FastFileReaderBuilder")
-                .open()
-                .expect("Failed to open path as FastFile");
+            let mut ffr = if let Some(size_hint) = size_hint {
+                FastFile::read(path)
+                    .expect("Failed to create FastFileReaderBuilder")
+                    .with_size_hint(size_hint)
+                    .open()
+                    .expect("Failed to open path as FastFile")
+            } else {
+                FastFile::read(path)
+                    .expect("Failed to create FastFileReaderBuilder")
+                    .open()
+                    .expect("Failed to open path as FastFile")
+            };
 
             let mut bytes_read = 0u64;
             let mut sum = 0u64;
@@ -50,12 +58,20 @@ pub mod fastfile {
             path::Path,
         };
 
-        pub fn read<P: AsRef<Path>>(path: P) -> io::Result<(u64, u64, u64)> {
+        pub fn read<P: AsRef<Path>>(path: P, size_hint: Option<u64>) -> io::Result<(u64, u64, u64)> {
             let path = path.as_ref();
-            let mut ffr = FastFile::read(path)
-                .expect("Failed to create FastFileReaderBuilder")
-                .open()
-                .expect("Failed to open path as FastFile");
+            let mut ffr = if let Some(size_hint) = size_hint {
+                FastFile::read(path)
+                    .expect("Failed to create FastFileReaderBuilder")
+                    .with_size_hint(size_hint)
+                    .open()
+                    .expect("Failed to open path as FastFile")
+            } else {
+                FastFile::read(path)
+                    .expect("Failed to create FastFileReaderBuilder")
+                    .open()
+                    .expect("Failed to open path as FastFile")
+            };
 
             let mut buf = prepare_buf!(ffr, 65_536);
             let mut bytes_read = 0u64;
