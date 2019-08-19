@@ -14,6 +14,7 @@ pub trait WriteAsCSV {
 
 impl WriteAsCSV for () {
     fn write_as_csv<W: Write>(&self, _: &mut W) -> io::Result<()> { Ok(()) }
+
     fn write_hdr_as_csv<W: Write>(_: &mut W) -> io::Result<()> { Ok(()) }
 }
 
@@ -208,11 +209,18 @@ pub struct Sample<'a, O: WriteAsCSV> {
     pub name:    &'a str,
     pub param:   &'a str,
     pub time_ns: u128,
-    pub extra: O,
+    pub extra:   O,
 }
 
 impl<'a, O: WriteAsCSV> Sample<'a, O> {
-    pub fn new(name: &'a str, param: &'a str, time_ns: u128, extra: O) -> Sample<'a, O> { Sample { name, param, time_ns, extra } }
+    pub fn new(name: &'a str, param: &'a str, time_ns: u128, extra: O) -> Sample<'a, O> {
+        Sample {
+            name,
+            param,
+            time_ns,
+            extra,
+        }
+    }
 }
 
 pub trait Summarize {
@@ -224,7 +232,7 @@ pub struct Summary {
     pub min:  f64,
     pub max:  f64,
     pub mean: f64,
-    pub sd: f64,
+    pub sd:   f64,
 }
 
 impl Summary {
@@ -233,11 +241,15 @@ impl Summary {
 
 impl Display for Summary {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let min = self.min / 1_000_000f64;  // run time in millisecounds
+        let min = self.min / 1_000_000f64; // run time in millisecounds
         let mean = self.mean / 1_000_000f64;
         let max = self.max / 1_000_000f64;
         let sd = self.sd / 1_000_000f64;
-        write!(f, "[min:{:10.2} ms, mean:{:10.2} ms, max:{:10.2} ms, sd:{:10.2}]", min, mean, max, sd)
+        write!(
+            f,
+            "[min:{:10.2} ms, mean:{:10.2} ms, max:{:10.2} ms, sd:{:10.2}]",
+            min, mean, max, sd
+        )
     }
 }
 

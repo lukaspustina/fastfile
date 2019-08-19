@@ -44,7 +44,7 @@ fn create_backing_reader(file: File, file_size: u64) -> Result<BackingReader> {
 fn prepare_file_for_reading<T: AsRawFd>(fd: &T, file_size: u64) -> Result<()> {
     let fd = fd.as_raw_fd();
 
-    if file_size >= 8*1024 as u64 {
+    if file_size >= 8 * 1024 as u64 {
         if file_size <= 268_435_456 as u64 {
             os::read_ahead(fd)?;
         } else {

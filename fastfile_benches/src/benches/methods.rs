@@ -8,9 +8,8 @@ pub mod fastfile {
             let (bytes_read, sum, reads_count) = self.as_ref().unwrap(); // This is not safe!
             write!(writer, "{},{},{}", bytes_read, sum, reads_count)
         }
-        fn write_hdr_as_csv<W: Write>(writer: &mut W) -> io::Result<()> {
-            write!(writer, "bytes_read,sum,reads_count")
-        }
+
+        fn write_hdr_as_csv<W: Write>(writer: &mut W) -> io::Result<()> { write!(writer, "bytes_read,sum,reads_count") }
     }
 
     pub mod fastread {

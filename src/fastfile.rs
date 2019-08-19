@@ -43,8 +43,8 @@ impl FastFile {
 
 /// `FastFileReaderBuilder` is a builder for a FastFileReader
 pub struct FastFileReaderBuilder {
-    pub file: File,
-    pub size: Option<u64>,
+    pub file:      File,
+    pub size:      Option<u64>,
     pub size_hint: Option<u64>,
 }
 
