@@ -7,17 +7,27 @@ use std::{
     time::Instant,
 };
 
-pub struct Benchmark<'a, T> {
+pub trait WriteAsCSV {
+    fn write_as_csv<W: Write>(&self, writer: &mut W) -> io::Result<()>;
+    fn write_hdr_as_csv<W: Write>(writer: &mut W) -> io::Result<()>;
+}
+
+impl WriteAsCSV for () {
+    fn write_as_csv<W: Write>(&self, _: &mut W) -> io::Result<()> { Ok(()) }
+    fn write_hdr_as_csv<W: Write>(_: &mut W) -> io::Result<()> { Ok(()) }
+}
+
+pub struct Benchmark<'a, T, O: WriteAsCSV> {
     name:       &'a str,
     params:     &'a [Param<T>],
     iterations: usize,
     setup:      Option<Box<dyn Fn(&T) -> ()>>,
-    functions:  Vec<NamedFunction<'a, T>>,
+    functions:  Vec<NamedFunction<'a, T, O>>,
     teardown:   Option<Box<dyn Fn(&T) -> ()>>,
 }
 
-impl<'a, T> Benchmark<'a, T> {
-    pub fn new(name: &'a str, params: &'a [Param<T>], iterations: usize) -> Benchmark<'a, T> {
+impl<'a, T, O: WriteAsCSV> Benchmark<'a, T, O> {
+    pub fn new(name: &'a str, params: &'a [Param<T>], iterations: usize) -> Benchmark<'a, T, O> {
         Benchmark {
             name,
             params,
@@ -28,13 +38,13 @@ impl<'a, T> Benchmark<'a, T> {
         }
     }
 
-    pub fn with_func<F: Fn(&T) -> () + 'static>(
+    pub fn with_func<F: Fn(&T) -> O + 'static>(
         name: &'a str,
         params: &'a [Param<T>],
         iterations: usize,
         function_name: &'a str,
         func: F,
-    ) -> Benchmark<'a, T> {
+    ) -> Benchmark<'a, T, O> {
         let mut benchmark = Benchmark::new(name, params, iterations);
         let function = NamedFunction {
             name:     function_name,
@@ -51,7 +61,7 @@ impl<'a, T> Benchmark<'a, T> {
         benchmark
     }
 
-    pub fn add_func<F: Fn(&T) -> () + 'static>(self, function_name: &'a str, func: F) -> Self {
+    pub fn add_func<F: Fn(&T) -> O + 'static>(self, function_name: &'a str, func: F) -> Self {
         let mut benchmark = self;
         let function = NamedFunction {
             name:     function_name,
@@ -67,7 +77,7 @@ impl<'a, T> Benchmark<'a, T> {
         benchmark
     }
 
-    pub fn benchmark(&self) -> BenchmarkResult {
+    pub fn benchmark(&self) -> BenchmarkResult<'a, O> {
         let num_of_samples = self.params.len() * self.functions.len();
         let mut res = BenchmarkResult::new(self.name, num_of_samples);
 
@@ -88,8 +98,8 @@ impl<'a, T> Benchmark<'a, T> {
                         setup(&p.value)
                     }
 
-                    let time_ns = measure_ns(|| func(&p.value));
-                    run_res.add(Sample::new(f.name, &p.name, time_ns));
+                    let (time_ns, f_res) = measure_ns(|| func(&p.value));
+                    run_res.add(Sample::new(f.name, &p.name, time_ns, f_res));
 
                     if let Some(ref teardown) = self.teardown {
                         teardown(&p.value)
@@ -115,10 +125,12 @@ impl<'a, T> Benchmark<'a, T> {
     pub fn params(&self) -> &[Param<T>] { self.params }
 }
 
-fn measure_ns<O, F: Fn() -> O>(func: F) -> u128 {
+fn measure_ns<O, F: Fn() -> O>(func: F) -> (u128, O) {
     let start = Instant::now();
-    func();
-    start.elapsed().as_nanos()
+    let res = func();
+    let elapsed = start.elapsed().as_nanos();
+
+    (elapsed, res)
 }
 
 pub struct Param<T> {
@@ -146,19 +158,19 @@ impl<T> Param<T> {
     pub fn value(&self) -> &T { &self.value }
 }
 
-pub struct NamedFunction<'a, T> {
+pub struct NamedFunction<'a, T, O: WriteAsCSV> {
     name:     &'a str,
-    function: Box<dyn Fn(&T) -> ()>,
+    function: Box<dyn Fn(&T) -> O>,
 }
 
 #[derive(Debug)]
-pub struct BenchmarkResult<'a> {
+pub struct BenchmarkResult<'a, O: WriteAsCSV> {
     pub benchmark_name: &'a str,
-    pub samples:        Vec<Sample<'a>>,
+    pub samples:        Vec<Sample<'a, O>>,
 }
 
-impl<'a> BenchmarkResult<'a> {
-    pub fn new(benchmark_name: &'a str, num: usize) -> BenchmarkResult<'a> {
+impl<'a, O: WriteAsCSV> BenchmarkResult<'a, O> {
+    pub fn new(benchmark_name: &'a str, num: usize) -> BenchmarkResult<'a, O> {
         let samples = Vec::with_capacity(num);
         BenchmarkResult {
             benchmark_name,
@@ -175,12 +187,16 @@ impl<'a> BenchmarkResult<'a> {
         self.write_as_csv(&mut file)
     }
 
-    fn add(&mut self, sample: Sample<'a>) { self.samples.push(sample) }
+    fn add(&mut self, sample: Sample<'a, O>) { self.samples.push(sample) }
 
     fn write_as_csv<W: Write>(&self, writer: &mut W) -> io::Result<()> {
-        writeln!(writer, "method,file_size,time")?;
+        write!(writer, "method,file_size,time,")?;
+        O::write_hdr_as_csv(writer)?;
+        writeln!(writer, "")?;
         for s in &self.samples {
-            writeln!(writer, "{},{},{}", s.name, s.param, s.time_ns)?;
+            write!(writer, "{},{},{},", s.name, s.param, s.time_ns)?;
+            s.extra.write_as_csv(writer)?;
+            writeln!(writer, "")?;
         }
 
         Ok(())
@@ -188,14 +204,15 @@ impl<'a> BenchmarkResult<'a> {
 }
 
 #[derive(Debug)]
-pub struct Sample<'a> {
+pub struct Sample<'a, O: WriteAsCSV> {
     pub name:    &'a str,
     pub param:   &'a str,
     pub time_ns: u128,
+    pub extra: O,
 }
 
-impl<'a> Sample<'a> {
-    pub fn new(name: &'a str, param: &'a str, time_ns: u128) -> Sample<'a> { Sample { name, param, time_ns } }
+impl<'a, O: WriteAsCSV> Sample<'a, O> {
+    pub fn new(name: &'a str, param: &'a str, time_ns: u128, extra: O) -> Sample<'a, O> { Sample { name, param, time_ns, extra } }
 }
 
 pub trait Summarize {
@@ -222,7 +239,7 @@ impl Display for Summary {
     }
 }
 
-impl Summarize for Vec<Sample<'_>> {
+impl<O: WriteAsCSV> Summarize for Vec<Sample<'_, O>> {
     fn summary(&self) -> Summary {
         let mut min = u128::max_value();
         let mut max = u128::min_value();

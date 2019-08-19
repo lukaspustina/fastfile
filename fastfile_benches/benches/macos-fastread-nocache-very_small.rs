@@ -13,7 +13,7 @@ fn main() {
             let _ = fastfile_benches::io::purge_cache(p);
         })
         .add_func("fastread", |p| {
-            let _ = fastread::read(p);
+            fastread::read(p)
         });
 
     benchmark
