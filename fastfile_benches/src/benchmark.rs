@@ -192,11 +192,11 @@ impl<'a, O: WriteAsCSV> BenchmarkResult<'a, O> {
     fn write_as_csv<W: Write>(&self, writer: &mut W) -> io::Result<()> {
         write!(writer, "method,file_size,time,")?;
         O::write_hdr_as_csv(writer)?;
-        writeln!(writer, "")?;
+        writeln!(writer)?;
         for s in &self.samples {
             write!(writer, "{},{},{},", s.name, s.param, s.time_ns)?;
             s.extra.write_as_csv(writer)?;
-            writeln!(writer, "")?;
+            writeln!(writer)?;
         }
 
         Ok(())

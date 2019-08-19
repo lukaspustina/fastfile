@@ -17,7 +17,7 @@ fn main() {
 
 fn read<R: Read + Sized>(reader: &mut R) -> std::io::Result<(u64, u64)> {
     let mut buf = [0u8; 8 * 1024];
-    let mut sum = 064;
+    let mut sum = 0u64;
     let mut bytes_read = 0u64;
 
     loop {

@@ -3,6 +3,7 @@ use fastfile_benches::{
     benchmark::Benchmark,
 };
 
+#[allow(clippy::redundant_closure)] // this is for clippy and the read closure
 fn main() {
     let benchmark_name = "Std: buf_read, NOT cached, very small [1 KiB - 128 KiB]";
     let iterations = 10000;
