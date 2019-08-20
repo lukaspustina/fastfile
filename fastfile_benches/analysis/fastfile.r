@@ -19,13 +19,31 @@ calc_speedups <- function(current, previous) {
   data.frame(file_size, speedup) %>%
     group_by(file_size) %>%
     summarise(
-      n=n(),
       mean=mean(speedup),
       median=median(speedup),
       sd=sd(speedup)
-    ) %>%
-    mutate( se=sd / sqrt(n)) %>%
-    mutate( ic=se * qt((1-alpha)/2 + .5, n-1))
+    )
+}
+
+calc_speedups_wo_outliers <- function(current, previous) {
+  previous_su<- previous %>%
+    group_by(file_size) %>%
+    summarise(
+      mean_time=mean(time),
+      median_time=median(time),
+    )
+  current_us <- current %>%
+    group_by(file_size) %>%
+    summarise(
+      mean_time=mean(time),
+      median_time=median(time),
+    )
+
+  means <- (previous_su$mean_time - current_us$mean_time) / previous_su$mean_time * 100
+  medians <- (previous_su$median_time - current_us$median_time) / previous_su$median_time * 100
+  speedups <- data.frame(current_us$file_size, means, medians)
+  colnames(speedups) <- c("file_size", "mean", "median")
+  speedups
 }
 
 hr <- function(x) {
