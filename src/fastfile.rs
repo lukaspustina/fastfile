@@ -92,7 +92,7 @@ impl io::Read for BackingReader {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         match self {
             BackingReader::File(file) => file.read(buf),
-            BackingReader::Mmap(_, mmap) => mmap.read(buf),
+            BackingReader::Mmap(_, ref mut mmap) => mmap.read(buf),
         }
     }
 }
@@ -102,6 +102,7 @@ pub struct FastFileReader {
     inner:  BackingReader,
     size:   usize,
     buffer: Option<Vec<u8>>,
+    cursor: usize,
 }
 
 impl FastFileReader {
@@ -110,6 +111,7 @@ impl FastFileReader {
             inner,
             size,
             buffer: None,
+            cursor: 0,
         }
     }
 
@@ -137,24 +139,8 @@ impl FastFileReader {
 
         Ok(vec)
     }
-}
 
-// Computes the optimal buffer size for a specified file size aligned to the system's page size.
-pub fn optimal_buffer_size(file_size: usize) -> usize {
-    let size = file_size as usize;
-    let suggestion = ((size + os::PAGE_SIZE - 1) / os::PAGE_SIZE) * os::PAGE_SIZE;
-    let suggestion = MAX_READ_BUF_SIZE.min(suggestion);
-    MIN_READ_BUF_SIZE.max(suggestion)
-}
-
-pub trait FastFileRead {
-    fn read(&mut self) -> io::Result<&[u8]>;
-
-    fn read_to_end(&mut self) -> io::Result<&[u8]>;
-}
-
-impl FastFileRead for FastFileReader {
-    fn read(&mut self) -> io::Result<&[u8]> {
+    fn file_read(&mut self) -> io::Result<&[u8]> {
         use std::io::Read;
 
         if self.buffer.is_none() {
@@ -168,7 +154,7 @@ impl FastFileRead for FastFileReader {
         Ok(&buf[0..n])
     }
 
-    fn read_to_end(&mut self) -> io::Result<&[u8]> {
+    fn file_read_to_end(&mut self) -> io::Result<&[u8]> {
         use std::io::Read;
 
         if self.buffer.is_none() {
@@ -186,6 +172,63 @@ impl FastFileRead for FastFileReader {
         let buf = vec.as_mut_slice();
 
         Ok(&buf[0..n])
+    }
+
+    fn mmap_read(&mut self) -> io::Result<&[u8]> {
+        match self.inner {
+            BackingReader::File(_) => unimplemented!(),
+            BackingReader::Mmap(_, ref mmap) =>  {
+                let mmap = mmap.get_ref();
+                let opt_size = optimal_buffer_size(self.size);
+                let mut end = self.cursor + opt_size;
+                if end > mmap.len() {
+                    end = mmap.len();
+                }
+                let buf = &mmap[self.cursor..end];
+                self.cursor = end;
+                Ok(buf)
+            }
+        }
+    }
+
+    fn mmap_read_to_end(&mut self) -> io::Result<&[u8]> {
+        match self.inner {
+            BackingReader::File(_) => unimplemented!(),
+            BackingReader::Mmap(_, ref mmap) =>  {
+                let mmap = mmap.get_ref();
+                Ok(&mmap[..])
+            }
+        }
+    }
+}
+
+/// Computes the optimal buffer size for a specified file size aligned to the system's page size.
+pub fn optimal_buffer_size(file_size: usize) -> usize {
+    let size = file_size as usize;
+    let suggestion = ((size + os::PAGE_SIZE - 1) / os::PAGE_SIZE) * os::PAGE_SIZE;
+    let suggestion = MAX_READ_BUF_SIZE.min(suggestion);
+    MIN_READ_BUF_SIZE.max(suggestion)
+}
+
+pub trait FastFileRead {
+    fn read(&mut self) -> io::Result<&[u8]>;
+
+    fn read_to_end(&mut self) -> io::Result<&[u8]>;
+}
+
+impl FastFileRead for FastFileReader {
+    fn read(&mut self) -> io::Result<&[u8]> {
+        match self.inner {
+            BackingReader::File(_) => self.file_read(),
+            BackingReader::Mmap(_, _) => self.mmap_read(),
+        }
+    }
+
+    fn read_to_end(&mut self) -> io::Result<&[u8]> {
+        match self.inner {
+            BackingReader::File(_) => self.file_read_to_end(),
+            BackingReader::Mmap(_, _) => self.mmap_read_to_end(),
+        }
     }
 }
 
