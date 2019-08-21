@@ -72,7 +72,7 @@ pub mod fastfile {
                     .expect("Failed to open path as FastFile")
             };
 
-            let mut buf = prepare_buf!(ffr, 65_536);
+            let mut buf = prepare_buf!(ffr, 8192);  // This is std::io::DEFAULT_BUF_SIZE as of 21.08.2019
             let mut bytes_read = 0usize;
             let mut sum = 0usize;
             let mut reads_count = 0usize;
@@ -104,7 +104,7 @@ pub mod std {
             let file = File::open(path).expect("Failed to open path as File");
             let mut reader = BufReader::new(file);
 
-            let mut buf = [0u8; 8 * 1024];
+            let mut buf = [0u8; 8*1024]; // This is std::io::DEFAULT_BUF_SIZE as of 21.08.2019
             let mut bytes_read = 0usize;
             let mut sum = 0usize;
             let mut reads_count = 0usize;
