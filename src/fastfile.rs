@@ -177,7 +177,7 @@ impl FastFileReader {
     fn mmap_read(&mut self) -> io::Result<&[u8]> {
         match self.inner {
             BackingReader::File(_) => unimplemented!(),
-            BackingReader::Mmap(_, ref mmap) =>  {
+            BackingReader::Mmap(_, ref mmap) => {
                 let mmap = mmap.get_ref();
                 let opt_size = optimal_buffer_size(self.size);
                 let mut end = self.cursor + opt_size;
@@ -194,7 +194,7 @@ impl FastFileReader {
     fn mmap_read_to_end(&mut self) -> io::Result<&[u8]> {
         match self.inner {
             BackingReader::File(_) => unimplemented!(),
-            BackingReader::Mmap(_, ref mmap) =>  {
+            BackingReader::Mmap(_, ref mmap) => {
                 let mmap = mmap.get_ref();
                 Ok(&mmap[..])
             }
@@ -220,14 +220,14 @@ impl FastFileRead for FastFileReader {
     fn read(&mut self) -> io::Result<&[u8]> {
         match self.inner {
             BackingReader::File(_) => self.file_read(),
-            BackingReader::Mmap(_, _) => self.mmap_read(),
+            BackingReader::Mmap(..) => self.mmap_read(),
         }
     }
 
     fn read_to_end(&mut self) -> io::Result<&[u8]> {
         match self.inner {
             BackingReader::File(_) => self.file_read_to_end(),
-            BackingReader::Mmap(_, _) => self.mmap_read_to_end(),
+            BackingReader::Mmap(..) => self.mmap_read_to_end(),
         }
     }
 }
