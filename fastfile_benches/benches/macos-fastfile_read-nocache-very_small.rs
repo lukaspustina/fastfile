@@ -13,7 +13,7 @@ fn main() {
             let _ = fastfile_benches::io::purge_cache(p);
         })
         .add_func("fastread", |p| {
-            let _ = read(p, Some(*FILE_SIZES_VERY_SMALL.last().unwrap() as u64)); // Safe, because slice is not empty
+            let _ = read(p, Some(*FILE_SIZES_VERY_SMALL.last().unwrap())); // Safe, because slice is not empty
         });
 
     benchmark

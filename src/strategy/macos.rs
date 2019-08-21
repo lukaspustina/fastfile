@@ -20,7 +20,7 @@ impl ReaderStrategy for DefaultMacOsReaderStrategy {
     }
 }
 
-fn get_file_size(ffrb: &FastFileReaderBuilder) -> Result<u64> {
+fn get_file_size(ffrb: &FastFileReaderBuilder) -> Result<usize> {
     let size = if let Some(size) = ffrb.size {
         size
     } else if let Some(size_hint) = ffrb.size_hint {
@@ -28,24 +28,24 @@ fn get_file_size(ffrb: &FastFileReaderBuilder) -> Result<u64> {
     } else {
         let file = &ffrb.file;
         let meta = file.metadata().map_err(|e| e.context(ErrorKind::FileOpFailed))?;
-        meta.len()
+        meta.len() as usize
     };
 
     Ok(size)
 }
 
-fn create_backing_reader(file: File, file_size: u64) -> Result<BackingReader> {
+fn create_backing_reader(file: File, file_size: usize) -> Result<BackingReader> {
     prepare_file_for_reading(&file, file_size)?;
 
     BackingReader::file(file)
 }
 
 #[allow(clippy::collapsible_if)]
-fn prepare_file_for_reading<T: AsRawFd>(fd: &T, file_size: u64) -> Result<()> {
+fn prepare_file_for_reading<T: AsRawFd>(fd: &T, file_size: usize) -> Result<()> {
 
-    if file_size >= 8 * 1024 as u64 {
+    if file_size >= 8 * 1024 {
         let fd = fd.as_raw_fd();
-        if file_size <= 268_435_456 as u64 {
+        if file_size <= 268_435_456 {
             os::read_ahead(fd)?;
         } else {
             os::read_advise(fd, file_size)?;

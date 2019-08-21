@@ -44,19 +44,19 @@ impl FastFile {
 /// `FastFileReaderBuilder` is a builder for a FastFileReader
 pub struct FastFileReaderBuilder {
     pub file:      File,
-    pub size:      Option<u64>,
-    pub size_hint: Option<u64>,
+    pub size:      Option<usize>,
+    pub size_hint: Option<usize>,
 }
 
 impl FastFileReaderBuilder {
-    pub fn with_size(self, size: u64) -> Self {
+    pub fn with_size(self, size: usize) -> Self {
         FastFileReaderBuilder {
             size: Some(size),
             ..self
         }
     }
 
-    pub fn with_size_hint(self, size_hint: u64) -> Self {
+    pub fn with_size_hint(self, size_hint: usize) -> Self {
         FastFileReaderBuilder {
             size_hint: Some(size_hint),
             ..self
@@ -100,12 +100,12 @@ impl io::Read for BackingReader {
 /// `FastFileReader` is a readable (`std::io::Read`) FastFile
 pub struct FastFileReader {
     inner:  BackingReader,
-    size:   u64,
+    size:   usize,
     buffer: Option<Vec<u8>>,
 }
 
 impl FastFileReader {
-    pub fn new(inner: BackingReader, size: u64) -> FastFileReader {
+    pub fn new(inner: BackingReader, size: usize) -> FastFileReader {
         FastFileReader {
             inner,
             size,
@@ -113,7 +113,7 @@ impl FastFileReader {
         }
     }
 
-    pub fn size(&self) -> u64 { self.size }
+    pub fn size(&self) -> usize { self.size }
 
     fn init_buffer(&mut self) {
         let buf_size = optimal_buffer_size(self.size);
@@ -140,7 +140,7 @@ impl FastFileReader {
 }
 
 // Computes the optimal buffer size for a specified file size aligned to the system's page size.
-pub fn optimal_buffer_size(file_size: u64) -> usize {
+pub fn optimal_buffer_size(file_size: usize) -> usize {
     let size = file_size as usize;
     let suggestion = ((size + os::PAGE_SIZE - 1) / os::PAGE_SIZE) * os::PAGE_SIZE;
     let suggestion = MAX_READ_BUF_SIZE.min(suggestion);
@@ -232,42 +232,42 @@ mod tests {
     #[test]
     fn test_optimal_buffer_size_page_size() {
         asserting("size = PAGE_SIZE - 1")
-            .that(&optimal_buffer_size(PAGE_SIZE as u64 - 1))
+            .that(&optimal_buffer_size(PAGE_SIZE - 1))
             .is_equal_to(&PAGE_SIZE);
         asserting("size = PAGE_SIZE")
-            .that(&optimal_buffer_size(PAGE_SIZE as u64))
+            .that(&optimal_buffer_size(PAGE_SIZE))
             .is_equal_to(&PAGE_SIZE);
         asserting("size = PAGE_SIZE + 1")
-            .that(&optimal_buffer_size(PAGE_SIZE as u64 + 1))
+            .that(&optimal_buffer_size(PAGE_SIZE + 1))
             .is_equal_to(2 * PAGE_SIZE);
         asserting("size = 2*PAGE_SIZE + 1")
-            .that(&optimal_buffer_size(2 * PAGE_SIZE as u64 + 1))
+            .that(&optimal_buffer_size(2 * PAGE_SIZE + 1))
             .is_equal_to(3 * PAGE_SIZE);
     }
 
     #[test]
     fn test_optimal_buffer_size_min_read_buf_size() {
         asserting("size = MIN_READ_BUF_SIZE - 1")
-            .that(&optimal_buffer_size(MIN_READ_BUF_SIZE as u64 - 1))
+            .that(&optimal_buffer_size(MIN_READ_BUF_SIZE - 1))
             .is_equal_to(&MIN_READ_BUF_SIZE);
         asserting("size = MIN_READ_BUF_SIZE")
-            .that(&optimal_buffer_size(MIN_READ_BUF_SIZE as u64))
+            .that(&optimal_buffer_size(MIN_READ_BUF_SIZE))
             .is_equal_to(&MIN_READ_BUF_SIZE);
         asserting("size = MIN_READ_BUF_SIZE + 1")
-            .that(&optimal_buffer_size(MIN_READ_BUF_SIZE as u64 + 1))
+            .that(&optimal_buffer_size(MIN_READ_BUF_SIZE + 1))
             .is_equal_to(&(2 * MIN_READ_BUF_SIZE));
     }
 
     #[test]
     fn test_optimal_buffer_size_max_read_buf_size() {
         asserting("size = MAX_READ_BUF_SIZE - 1")
-            .that(&optimal_buffer_size(MAX_READ_BUF_SIZE as u64 - 1))
+            .that(&optimal_buffer_size(MAX_READ_BUF_SIZE - 1))
             .is_equal_to(&MAX_READ_BUF_SIZE);
         asserting("size = MAX_READ_BUF_SIZE")
-            .that(&optimal_buffer_size(MAX_READ_BUF_SIZE as u64))
+            .that(&optimal_buffer_size(MAX_READ_BUF_SIZE))
             .is_equal_to(&MAX_READ_BUF_SIZE);
         asserting("size = MAX_READ_BUF_SIZE + 1")
-            .that(&optimal_buffer_size(MAX_READ_BUF_SIZE as u64 + 1))
+            .that(&optimal_buffer_size(MAX_READ_BUF_SIZE + 1))
             .is_equal_to(&(MAX_READ_BUF_SIZE));
     }
 
@@ -290,7 +290,7 @@ mod tests {
 
         fn fastfilereader_reads_correctly_tester<T: strategy::ReaderStrategy>(reader_strategy: &T) {
             verify_reader(reader_strategy, |ffr: &mut FastFileReader| {
-                let mut len = 0u64;
+                let mut len = 0usize;
                 let mut digest = Context::new(&SHA256);
                 let mut buf = prepare_buf!(ffr, 4096);
                 loop {
@@ -298,7 +298,7 @@ mod tests {
                     if n == 0 {
                         break;
                     };
-                    len += n as u64;
+                    len += n;
                     digest.update(&buf[0..n]);
                 }
                 let digest = digest.finish();
@@ -326,14 +326,14 @@ mod tests {
 
         fn fastfilereader_reads_correctly_tester<T: strategy::ReaderStrategy>(reader_strategy: &T) {
             verify_reader(reader_strategy, |ffr: &mut FastFileReader| {
-                let mut len = 0u64;
+                let mut len = 0usize;
                 let mut digest = Context::new(&SHA256);
                 loop {
                     let buf = ffr.read().expect("Failed to fastread file");
                     if buf.is_empty() {
                         break;
                     };
-                    len += buf.len() as u64;
+                    len += buf.len();
                     digest.update(buf);
                 }
                 let digest = digest.finish();
@@ -342,7 +342,7 @@ mod tests {
         }
     }
 
-    fn verify_reader<T: strategy::ReaderStrategy, F: Fn(&mut FastFileReader) -> (u64, Digest)>(
+    fn verify_reader<T: strategy::ReaderStrategy, F: Fn(&mut FastFileReader) -> (usize, Digest)>(
         reader_strategy: &T,
         reader: F,
     ) {
@@ -372,7 +372,7 @@ mod tests {
     impl strategy::ReaderStrategy for TestFileReaderStragegy {
         fn get_reader(&self, ffrb: FastFileReaderBuilder) -> Result<FastFileReader> {
             let FastFileReaderBuilder { file, .. } = ffrb;
-            let size = file.metadata().unwrap().len();
+            let size = file.metadata().unwrap().len() as usize;
             let inner = BackingReader::file(file)?;
 
             Ok(FastFileReader::new(inner, size))
@@ -383,7 +383,7 @@ mod tests {
     impl strategy::ReaderStrategy for TestMmapReaderStragegy {
         fn get_reader(&self, ffrb: FastFileReaderBuilder) -> Result<FastFileReader> {
             let FastFileReaderBuilder { file, .. } = ffrb;
-            let size = file.metadata().unwrap().len();
+            let size = file.metadata().unwrap().len() as usize;
             let inner = BackingReader::mmap(file)?;
 
             Ok(FastFileReader::new(inner, size))

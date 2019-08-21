@@ -3,7 +3,7 @@ pub mod fastfile {
 
     use std::io::{self, Write};
 
-    impl WriteAsCSV for io::Result<(u64, u64, u64)> {
+    impl WriteAsCSV for io::Result<(usize, usize, usize)> {
         fn write_as_csv<W: Write>(&self, writer: &mut W) -> io::Result<()> {
             let (bytes_read, sum, reads_count) = self.as_ref().unwrap(); // This is not safe!
             write!(writer, "{},{},{}", bytes_read, sum, reads_count)
@@ -16,7 +16,7 @@ pub mod fastfile {
         use fastfile::{prelude::*, FastFileRead};
         use std::{io, path::Path};
 
-        pub fn read<P: AsRef<Path>>(path: P, size_hint: Option<u64>) -> io::Result<(u64, u64, u64)> {
+        pub fn read<P: AsRef<Path>>(path: P, size_hint: Option<usize>) -> io::Result<(usize, usize, usize)> {
             let path = path.as_ref();
             let mut ffr = if let Some(size_hint) = size_hint {
                 FastFile::read(path)
@@ -31,21 +31,21 @@ pub mod fastfile {
                     .expect("Failed to open path as FastFile")
             };
 
-            let mut bytes_read = 0u64;
-            let mut sum = 0u64;
-            let mut reads_count = 0u64;
+            let mut bytes_read = 0usize;
+            let mut sum = 0usize;
+            let mut reads_count = 0usize;
             loop {
                 let len = match ffr.read() {
                     Ok(buf) if buf.is_empty() => return Ok((bytes_read, sum, reads_count)),
                     Ok(buf) => {
-                        sum += buf.iter().map(|x| u64::from(*x)).sum::<u64>();
+                        sum += buf.iter().map(|x| usize::from(*x)).sum::<usize>();
                         buf.len()
                     }
                     Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
                     Err(e) => return Err(e),
                 };
                 reads_count += 1;
-                bytes_read += len as u64;
+                bytes_read += len;
             }
         }
     }
@@ -57,7 +57,7 @@ pub mod fastfile {
             path::Path,
         };
 
-        pub fn read<P: AsRef<Path>>(path: P, size_hint: Option<u64>) -> io::Result<(u64, u64, u64)> {
+        pub fn read<P: AsRef<Path>>(path: P, size_hint: Option<usize>) -> io::Result<(usize, usize, usize)> {
             let path = path.as_ref();
             let mut ffr = if let Some(size_hint) = size_hint {
                 FastFile::read(path)
@@ -73,9 +73,9 @@ pub mod fastfile {
             };
 
             let mut buf = prepare_buf!(ffr, 65_536);
-            let mut bytes_read = 0u64;
-            let mut sum = 0u64;
-            let mut reads_count = 0u64;
+            let mut bytes_read = 0usize;
+            let mut sum = 0usize;
+            let mut reads_count = 0usize;
             loop {
                 let len = match ffr.read(&mut buf[..]) {
                     Ok(0) => return Ok((bytes_read, sum, reads_count)),
@@ -83,8 +83,8 @@ pub mod fastfile {
                     Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
                     Err(e) => return Err(e),
                 };
-                bytes_read += len as u64;
-                sum += buf.iter().map(|x| u64::from(*x)).sum::<u64>();
+                bytes_read += len;
+                sum += buf.iter().map(|x| usize::from(*x)).sum::<usize>();
                 reads_count += 1;
             }
         }
@@ -99,15 +99,15 @@ pub mod std {
             path::Path,
         };
 
-        pub fn read<P: AsRef<Path>>(path: P) -> io::Result<(u64, u64, u64)> {
+        pub fn read<P: AsRef<Path>>(path: P) -> io::Result<(usize, usize, usize)> {
             let path = path.as_ref();
             let file = File::open(path).expect("Failed to open path as File");
             let mut reader = BufReader::new(file);
 
             let mut buf = [0u8; 8 * 1024];
-            let mut bytes_read = 0u64;
-            let mut sum = 0u64;
-            let mut reads_count = 0u64;
+            let mut bytes_read = 0usize;
+            let mut sum = 0usize;
+            let mut reads_count = 0usize;
             loop {
                 let len = match reader.read(&mut buf[..]) {
                     Ok(0) => return Ok((bytes_read, sum, reads_count)),
@@ -115,8 +115,8 @@ pub mod std {
                     Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
                     Err(e) => return Err(e),
                 };
-                bytes_read += len as u64;
-                sum += buf.iter().map(|x| u64::from(*x)).sum::<u64>();
+                bytes_read += len;
+                sum += buf.iter().map(|x| usize::from(*x)).sum::<usize>();
                 reads_count += 1;
             }
         }

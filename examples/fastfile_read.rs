@@ -18,10 +18,10 @@ fn main() {
     println!("Bytes read: {}, expected: {}", bytes_read, ffr.size());
 }
 
-fn read<R: Read + Sized>(reader: &mut R, buf_size: usize) -> std::io::Result<u64> {
+fn read<R: Read + Sized>(reader: &mut R, buf_size: usize) -> std::io::Result<usize> {
     let mut buf = prepare_buf!(reader);
 
-    let mut bytes_read = 0u64;
+    let mut bytes_read = 0usize;
     loop {
         let len = match reader.read(&mut buf[0..buf_size]) {
             Ok(0) => return Ok(bytes_read),
@@ -29,6 +29,6 @@ fn read<R: Read + Sized>(reader: &mut R, buf_size: usize) -> std::io::Result<u64
             Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
             Err(e) => return Err(e),
         };
-        bytes_read += len as u64;
+        bytes_read += len;
     }
 }

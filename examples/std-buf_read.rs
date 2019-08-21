@@ -15,10 +15,10 @@ fn main() {
     println!("Bytes read: {}, sum: {}", bytes_read.0, bytes_read.1);
 }
 
-fn read<R: Read + Sized>(reader: &mut R) -> std::io::Result<(u64, u64)> {
+fn read<R: Read + Sized>(reader: &mut R) -> std::io::Result<(usize, usize)> {
     let mut buf = [0u8; 8 * 1024];
-    let mut sum = 0u64;
-    let mut bytes_read = 0u64;
+    let mut sum = 0usize;
+    let mut bytes_read = 0usize;
 
     loop {
         let len = match reader.read(&mut buf[..]) {
@@ -27,8 +27,8 @@ fn read<R: Read + Sized>(reader: &mut R) -> std::io::Result<(u64, u64)> {
             Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
             Err(e) => return Err(e),
         };
-        bytes_read += len as u64;
+        bytes_read += len;
 
-        sum += buf.iter().map(|x| u64::from(*x)).sum::<u64>();
+        sum += buf.iter().map(|x| usize::from(*x)).sum::<usize>();
     }
 }

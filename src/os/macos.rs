@@ -8,8 +8,8 @@ use libc;
 use std::os::unix::io::RawFd;
 
 #[allow(dead_code)]
-pub fn read_advise(fd: RawFd, file_size: u64) -> Result<()> {
-    let count: libc::c_int = file_size.min(libc::c_int::max_value() as u64) as libc::c_int;
+pub fn read_advise(fd: RawFd, file_size: usize) -> Result<()> {
+    let count: libc::c_int = file_size.min(libc::c_int::max_value() as usize) as libc::c_int;
 
     let ra = libc::radvisory {
         ra_offset: 0 as libc::off_t,
@@ -36,7 +36,7 @@ pub fn read_ahead(fd: RawFd) -> Result<()> {
 }
 
 #[allow(dead_code)]
-pub fn get_page_cache_info(fd: RawFd, file_size: u64) -> Result<PageCacheInfo> {
+pub fn get_page_cache_info(fd: RawFd, file_size: usize) -> Result<PageCacheInfo> {
     let mem = unsafe {
         let mem = libc::mmap(
             std::ptr::null_mut(),
@@ -77,7 +77,7 @@ pub fn get_page_cache_info(fd: RawFd, file_size: u64) -> Result<PageCacheInfo> {
     Ok(pci)
 }
 
-fn bytes_in_pages(bytes: u64) -> usize { ((bytes + PAGE_SIZE as u64 - 1) / PAGE_SIZE as u64) as usize }
+fn bytes_in_pages(bytes: usize) -> usize { ((bytes + PAGE_SIZE - 1) / PAGE_SIZE) }
 
 #[cfg(test)]
 mod tests {
@@ -90,7 +90,7 @@ mod tests {
     #[test]
     fn test_read_advise() {
         let f = get_file();
-        let file_size = f.metadata().expect("Could not get metadata of test file").len();
+        let file_size = f.metadata().expect("Could not get metadata of test file").len() as usize;
 
         let res = read_advise(f.as_raw_fd(), file_size);
         asserting("Read advise").that(&res).is_ok();
@@ -108,7 +108,7 @@ mod tests {
     #[test]
     fn test_get_page_cache_info() {
         let f = get_file();
-        let file_size = f.metadata().expect("Could not get metadata of test file").len();
+        let file_size = f.metadata().expect("Could not get metadata of test file").len() as usize;
 
         let res = get_page_cache_info(f.as_raw_fd(), file_size);
         asserting("Get page cache information").that(&res.is_ok()).is_true();
