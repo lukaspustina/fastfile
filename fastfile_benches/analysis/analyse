@@ -21,7 +21,7 @@ if (is.null(opt$"current-file")){
   stop("Results file name must be provided", call=FALSE)
 }
 
-current_file_prefix <- tools::file_path_sans_ext(basename(opt$"current-file"))
+current_file_prefix <- tools::file_path_sans_ext(basename(opt$"current-file"), compression=TRUE)
 
 if (is.null(opt$title)){
   opt$title <- current_file_prefix

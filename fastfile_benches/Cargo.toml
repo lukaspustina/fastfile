@@ -12,6 +12,7 @@ bench = false
 [dependencies]
 byte-unit = "3.0"
 fastfile = { path = "../" }
+flate2 = { version = "1.0", features = ["rust_backend"], default-features = false }
 libc = "0.2"
 rand = { version = "0.7", features = ["small_rng"] }
 ring = "0.14"

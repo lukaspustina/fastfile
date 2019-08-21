@@ -182,10 +182,14 @@ impl<'a, O: WriteAsCSV> BenchmarkResult<'a, O> {
     pub fn write_results<P: AsRef<Path>>(&self, results_dir: P) -> io::Result<()> {
         fs::create_dir_all(&results_dir)?;
         let mut output_path = results_dir.as_ref().join(self.benchmark_name);
-        output_path.set_extension("csv");
+        output_path.set_extension("csv.gz");
         println!("Writing benchmark results to \"{}\"", &output_path.to_string_lossy());
-        let mut file = File::create(output_path)?;
-        self.write_as_csv(&mut file)
+        let file = File::create(output_path)?;
+        let mut gzip = flate2::write::GzEncoder::new(file, flate2::Compression::default());
+        self.write_as_csv(&mut gzip)?;
+        gzip.finish()?;
+
+        Ok(())
     }
 
     fn add(&mut self, sample: Sample<'a, O>) { self.samples.push(sample) }
