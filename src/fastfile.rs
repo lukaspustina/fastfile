@@ -117,15 +117,25 @@ impl FastFileReader {
 
     fn init_buffer(&mut self) {
         let buf_size = optimal_buffer_size(self.size);
-        let mut vec: Vec<u8> = Vec::with_capacity(buf_size);
-        unsafe {
-            vec.set_len(buf_size);
-        }
-        // let buf = vec.as_mut_slice();
-        // unsafe {
-        // self.inner.initializer().initialize(&mut *buf);
-        // }
+        let vec = match Self::do_init_buffer(buf_size) {
+            Ok(vec) => vec,
+            Err(e) => panic!("{}", e.to_string()),
+        };
         self.buffer = Some(vec);
+    }
+
+    fn do_init_buffer(buf_size: usize) -> Result<Vec<u8>> {
+        let layout = std::alloc::Layout::from_size_align(buf_size, os::PAGE_SIZE)
+            .map_err(|e| e.context(ErrorKind::MemOpFailed("Invalid memory request")))?;
+        let vec = unsafe {
+            let buf = std::alloc::alloc(layout);
+            if buf.is_null() {
+                return Err(Error::from(ErrorKind::MemOpFailed("Memory allocation request failed")));
+            }
+            Vec::from_raw_parts(buf, buf_size, buf_size)
+        };
+
+        Ok(vec)
     }
 }
 

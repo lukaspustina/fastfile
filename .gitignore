@@ -4,4 +4,5 @@ fastfile_benches/target
 Cargo.lock
 **/.Rhistory
 fastfile_benches/results/current
+fastfile_benches/results/temp
 
