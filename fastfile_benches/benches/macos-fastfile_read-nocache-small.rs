@@ -1,10 +1,10 @@
 use fastfile_benches::{
-    benches::{cleanup, methods::fastfile::read::read, prepare, FILE_SIZES_VERY_SMALL as FILE_SIZES},
+    benches::{cleanup, methods::fastfile::read::read, prepare, FILE_SIZES_SMALL as FILE_SIZES},
     benchmark::Benchmark,
 };
 
 fn main() {
-    let benchmark_name = "FastFile: read, NOT cached, very small [64 B - 128 KiB]";
+    let benchmark_name = "FastFile: read, NOT cached, very small [1 KiB - 2 MiB]";
     let iterations = 10000;
 
     let params = prepare(&FILE_SIZES).expect("Failed to create test files");

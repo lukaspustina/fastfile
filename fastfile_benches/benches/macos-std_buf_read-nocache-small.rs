@@ -1,10 +1,11 @@
 use fastfile_benches::{
-    benches::{cleanup, methods::fastfile::read::read, prepare, FILE_SIZES_VERY_SMALL as FILE_SIZES},
+    benches::{cleanup, methods::std::buf_read::read, prepare, FILE_SIZES_SMALL as FILE_SIZES},
     benchmark::Benchmark,
 };
 
+#[allow(clippy::redundant_closure)] // this is for clippy and the read closure
 fn main() {
-    let benchmark_name = "FastFile: read, NOT cached, very small [64 B - 128 KiB]";
+    let benchmark_name = "Std: buf_read, NOT cached, very small [1 KiB - 2 MiB]";
     let iterations = 10000;
 
     let params = prepare(&FILE_SIZES).expect("Failed to create test files");
@@ -12,9 +13,7 @@ fn main() {
         .setup(|p| {
             let _ = fastfile_benches::io::purge_cache(p);
         })
-        .add_func("fastread", |p| {
-            read(p, Some(*FILE_SIZES.last().unwrap())) // Safe, because slice is not empty
-        });
+        .add_func("fastread", |p| read(p));
 
     benchmark
         .benchmark()
