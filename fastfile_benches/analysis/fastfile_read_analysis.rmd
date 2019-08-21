@@ -136,8 +136,6 @@ speedups_stats <- if (is_filter_outliers) {
   calc_speedups(current, previous)
 }
 
-speedups_stats
-
 # Mean with Standard Error
 if (is_filter_outliers) {
   conditional_coloring_plot(title="Mean Speedup", xlab="File Size", ylab="Speed Up in %") +
@@ -156,6 +154,38 @@ conditional_coloring_plot(title="Median Speedup", xlab="File Size", ylab="Speed 
   geom_bar(data=speedups_stats, aes(x=file_size, y=median, fill=median < 0), stat="identity", alpha=0.8)
 ```
 
+
+
+# Read statistics
+
+```{r read_statistics}
+
+current_reads <- current %>%
+    group_by(file_size) %>%
+    summarise(
+      mean=mean(reads_count),
+      sd=sd(reads_count)
+    )
+previous_reads <- if (has_previous) { previous %>%
+    group_by(file_size) %>%
+    summarise(
+      mean=mean(reads_count),
+      sd=sd(reads_count)
+    )
+}
+
+
+p <- plot(title="Mean Number of Reads", xlab="File Size", ylab="Reads") +
+  scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x), labels = trans_format(function(x) x, function(x) hr(x)))
+if (has_previous) {
+  p <- p +
+    geom_bar(data=previous_reads, aes(x=file_size, y=mean), fill=previous_color, stat="identity", alpha=0.8) +
+    geom_errorbar(data=previous_reads, aes(x=file_size, ymin=mean-sd, ymax=mean+sd), color=previous_color, width=0.4, alpha=0.9, size=0.5)
+}
+  p + 
+    geom_bar(data=current_reads, aes(x=file_size, y=mean), fill=current_color, stat="identity", alpha=0.8) +
+    geom_errorbar(data=current_reads, aes(x=file_size, ymin=mean-sd, ymax=mean+sd), color=current_color, width=0.4, alpha=0.9, size=0.5)
+```
 
 
 
