@@ -5,16 +5,21 @@ name: CI
 jobs:
   check:
     name: Check
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os.name }}
     strategy:
+      fail-fast: false
       matrix:
         os:
-          - ubuntu-latest
-          - macOS-latest
-          - windows-latest
+          - name: ubuntu-latest
+            allow_fail: true
+          - name: macOS-latest
+            allow_fail: false
+          - name: windows-latest
+            allow_fail: true
         rust:
           - 1.36.0
           - stable
+
     steps:
       - name: Checkout sources
         uses: actions/checkout@v1
@@ -30,4 +35,5 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           command: check
+          continue-on-error: ${{ matrix.os.allow_fail }}
 
