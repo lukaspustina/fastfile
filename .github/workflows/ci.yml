@@ -10,8 +10,8 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - name: ubuntu-latest
-            allow_fail: true
+          # - name: ubuntu-latest
+          #  allow_fail: true
           - name: macOS-latest
             allow_fail: false
         rust:
