@@ -31,13 +31,13 @@ jobs:
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: ${{ matrix.rust }}
+          toolchain: ${{ matrix.rust.name }}
           override: true
 
       - name: Run cargo check
         uses: actions-rs/cargo@v1
         with:
-          toolchain: ${{ matrix.rust }}
+          toolchain: ${{ matrix.rust.name }}
           command: check
           continue-on-error: ${{ matrix.os.allow_fail || matrix.rust.allow_fail }}
 
