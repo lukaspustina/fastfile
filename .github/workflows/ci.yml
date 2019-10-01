@@ -68,7 +68,8 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: -- -D warnings $(source ".clippy.args")
+          # For lints see /.clippy.args
+          args: -- -D warnings -A renamed_and_removed_lints -A clippy::match_bool -A clippy::get_unwrap -A clippy::new_without_default -A clippy::identity-conversion -A clippy::needless_lifetimes
 
   rustfmt:
     name: Format
