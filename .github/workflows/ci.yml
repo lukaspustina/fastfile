@@ -14,11 +14,15 @@ jobs:
             allow_fail: true
           - name: macOS-latest
             allow_fail: false
-          - name: windows-latest
-            allow_fail: true
         rust:
-          - 1.36.0
-          - stable
+          - name: 1.36.0
+            allow_fail: false
+          - name: stable
+            allow_fail: false
+          - name: beta
+            allow_fail: true
+          - name: nightly
+            allow_fail: true
 
     steps:
       - name: Checkout sources
@@ -35,5 +39,5 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           command: check
-          continue-on-error: ${{ matrix.os.allow_fail }}
+          continue-on-error: ${{ matrix.os.allow_fail || matrix.rust.allow_fail }}
 
