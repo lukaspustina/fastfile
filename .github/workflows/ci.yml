@@ -15,8 +15,6 @@ jobs:
         rust:
           - 1.36.0
           - stable
-        target:
-          - armv7-unknown-linux-gnueabihf
     steps:
       - name: Checkout sources
         uses: actions/checkout@v1
@@ -25,14 +23,11 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
-          target: ${{ matrix.target }}
           override: true
 
       - name: Run cargo check
         uses: actions-rs/cargo@v1
         with:
           toolchain: ${{ matrix.rust }}
-          use-cross: true
-          args: --release --target=${{ matrix.target }}
           command: check
 
