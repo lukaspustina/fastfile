@@ -49,7 +49,7 @@ jobs:
   - job: 'Audit'
     pool:
       vmImage: 'ubuntu-16.04'
-    container: 'rust'
+    container: 'rust:latest'
     steps:
       - script: cargo install cargo-audit
         displayName: Install Cargo Audit
