@@ -46,6 +46,16 @@ jobs:
       - script: cargo fmt --all -- --check
         displayName: Run fmt
 
+  - job: 'Cargo Audit'
+    pool:
+      vmImage: 'ubuntu-16.04'
+    container: 'rustlang/rust'
+    steps:
+      - script: cargo install cargo-audit
+        displayName: Install Cargo Audit
+      - script: cargo audit --deny-warnings
+        displayName: Run Cargo Audit
+
   - job: 'Test'
     strategy:
       matrix:

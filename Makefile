@@ -16,5 +16,8 @@ clippy:
 fmt:
 	cargo +nightly fmt
 
+audit:
+	cargo audit --deny-warnings
+
 .PHONY:
 

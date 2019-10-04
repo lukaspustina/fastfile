@@ -23,7 +23,6 @@ jobs:
             allow_fail: true
           - name: nightly
             allow_fail: true
-
     steps:
       - name: Checkout sources
         uses: actions/checkout@v1
@@ -40,6 +39,27 @@ jobs:
           toolchain: ${{ matrix.rust.name }}
           command: check
           continue-on-error: ${{ matrix.os.allow_fail || matrix.rust.allow_fail }}
+
+  audit:
+    name: Cargo Audit
+    runs-on: ${{ matrix.os.name }}
+    strategy:
+      matrix:
+        os:
+          # - name: ubuntu-latest
+          - name: macOS-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v1
+
+      - name: Install cargo audit
+        run: cargo install cargo-audit
+
+      - name: Run cargo audit
+        uses: actions-rs/cargo@v1
+        with:
+          command: audit
+          args: --deny-warnings
 
   clippy:
     name: Clippy
