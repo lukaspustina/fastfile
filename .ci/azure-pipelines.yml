@@ -46,7 +46,7 @@ jobs:
       - script: cargo fmt --all -- --check
         displayName: Run fmt
 
-  - job: 'Cargo Audit'
+  - job: 'Audit'
     pool:
       vmImage: 'ubuntu-16.04'
     container: 'rustlang/rust'

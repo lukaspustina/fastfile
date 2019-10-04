@@ -48,9 +48,17 @@ jobs:
         os:
           # - name: ubuntu-latest
           - name: macOS-latest
+        rust:
+          - name: stable
     steps:
       - name: Checkout sources
         uses: actions/checkout@v1
+
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust.name }}
+          override: true
 
       - name: Install cargo audit
         run: cargo install cargo-audit
